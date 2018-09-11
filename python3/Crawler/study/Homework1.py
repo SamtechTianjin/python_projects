@@ -56,7 +56,7 @@ def get_jobs_info(page_urls):
                     else:
                         f.write("{0}: {1}\n".format(key, job_info[key]))
             # break       # 调试时只获得第一个职位的链接
-        break           # 调试时只获得第一页的链接
+        # break           # 调试时只获得第一页的链接
     return jobs_info
 
 # 获得每个职位的详细信息
