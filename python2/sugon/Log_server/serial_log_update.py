@@ -78,7 +78,6 @@ def exec_directory_flush():
 
 
 if __name__ == '__main__':
-    pass
     while True:
         ret = exec_directory_flush()
         time.sleep(30)
