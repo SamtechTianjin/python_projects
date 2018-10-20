@@ -1,0 +1,12 @@
+v01：
+0. 测试前Linux系统下python需要安装paramiko模块
+1. 测试参数可以使用python xxx.py -h查看
+    使用-L或者--inband选择测试的LAN number 默认为1
+    使用-I选择是否进行带内测试 默认不进行
+    使用-M选择ME retry次数
+2. 收集baseline结果后，会打印baseline信息，可以选择是否继续进行测试
+2. 测试中添加Web部分的测试，通过curl查看dashboard页面下的参数信息
+3. 除带外测试外，会ssh登录到OS下，本地进行IPMI部分的测试
+4. 每圈测试会检测lighttpd服务以及ipmi driver的加载情况("ipmi_si", "ipmi_devintf", "ipmi_msghandler")
+5. 每圈测试会记录风扇转速情况
+6. 除主日志外，其余日志保存在LOG_${BMC_IP}_${timestamp}命名的文件夹下
