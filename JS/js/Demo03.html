@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Demo03</title>
+</head>
+<body>
+<div>
+    <input type="button" value="全选" onclick="SelectAll();">
+    <input type="button" value="取消" onclick="ClearAll();">
+    <input type="button" value="反选" onclick="ReserveAll();">
+</div>
+
+<div>
+    <table border="1">
+        <tr>
+            <td><input type="checkbox"></td>
+            <td>123</td>
+            <td>123</td>
+        </tr>
+        <tr>
+            <td><input type="checkbox"></td>
+            <td>123</td>
+            <td>123</td>
+        </tr>
+        <tr>
+            <td><input type="checkbox"></td>
+            <td>123</td>
+            <td>123</td>
+        </tr>
+        <tr>
+            <td><input type="checkbox"></td>
+            <td>123</td>
+            <td>123</td>
+        </tr>
+    </table>
+</div>
+
+
+<script src="jquery-3.3.1.js"></script>
+<script>
+    // console.log($("table input[type='checkbox']").attr("checked","checked"));
+    // console.log($("table input[type='checkbox']").prop("checked",true));
+
+    var userList = [11,22,33,44];
+    $.each(userList,function (index,item) {
+        console.log(index,item);
+    });
+
+    var dict = {"key1":"value1", "key2":"value2"};
+    $.each(dict,function (key,value) {
+        console.log(key,value);
+    });
+
+    var userList2 = [11,22,33,44];
+    $.each(userList2,function (item) {
+        console.log(item);
+    });
+
+
+
+    function SelectAll() {
+        // $("table input[type='checkbox']")
+        $("table input[type='checkbox']").prop("checked",true);
+        console.log("select all");
+    }
+
+    function ClearAll() {
+        $("table input[type='checkbox']").prop("checked",false);
+        console.log("clear all");
+    }
+
+    function ReserveAll() {
+        // each 每一个循环度执行这个function
+        // $(this)表示当前标签
+        $("table input[type='checkbox']").each(function () {
+            var isChecked = $(this).prop("checked");
+            if(isChecked){
+                $(this).prop("checked",false);
+            }else{
+                $(this).prop("checked",true);
+            }
+        });
+        console.log("Reserve all");
+    }
+
+
+
+
+
+</script>
+</body>
+</html>

@@ -44,9 +44,18 @@ elif [ "${log_type}" == "system" ]; then
     script="${current_path}/system.sh"
 fi
 
+# Flush process
+flush_process=`screen -ls | grep serial_log_flush`
+if [ -z "${flush_process}" ]; then
+    flush_session="serial_log_flush"
+    flush_cmd="python ${current_path}/serial_log_update.py ${log_path}"
+    screen -dmS ${flush_session}
+    screen -S ${flush_session} -p 0 -X stuff "${flush_cmd}\n"
+fi
+
+
 cmd="bash ${script} ${IP} ${port} ${log_path}"
 
 # Create screen session to run script
 screen -dmS ${session_name}
 screen -S ${session_name} -p 0 -X stuff "${cmd}\n"
-

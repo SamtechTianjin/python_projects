@@ -1,0 +1,4 @@
+# Test Cases
+# 书写顺序即测试执行顺序，根据需要编辑即可
+# 格式：package/module = 0 or 1
+test/Sam_Test = 1

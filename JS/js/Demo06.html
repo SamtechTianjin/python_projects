@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>~编辑行内容的JavaScript练习~</title>
+    <style type="text/css">
+        .edit-mode {
+            background-color: #8DBE5A;
+            font-weight: bold;
+            font-size: 16px;
+            color: white;
+            display: inline-block;
+            width: 160px;
+            line-height: 40px;
+            text-align: center;
+        }
+        .editing {
+            background-color: cornflowerblue;
+            color: white;
+        }
+        .choice_button {
+            height: 30px;
+            width: 60px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .main {
+            margin: 0 auto;
+            width: 600px;
+            border: 1px solid red;
+        }
+    </style>
+</head>
+<body>
+    <div class="main">HAHAHHA</div>
+    <div style="padding: 30px;">
+        <input class="choice_button" type="button" value="全选" onclick="CheckAll('#edit_mode','#tbl');">
+        <input class="choice_button" type="button" value="反选" onclick="CheckReverse('#edit_mode','#tbl');">
+        <input class="choice_button" type="button" value="取消" onclick="CheckCancel('#edit_mode','#tbl');">
+        <input type="button" value="进入编辑模式" id="edit_mode" class="edit-mode" onclick="EditMode(this,'#tbl');">
+    </div>
+    <table border="1" style="text-align: center">
+        <thead>
+            <tr>
+                <th style="width: 60px">选择</th>
+                <th style="width: 240px">主机名</th>
+                <th style="width: 160px">IP地址</th>
+                <th style="width: 80px">状态</th>
+            </tr>
+        </thead>
+        <tbody id="tbl">
+            <tr>
+                <td><input type="checkbox"></td>
+                <td edit="true">TJ_BMC_Server</td>
+                <td edit="true">10.2.39.240</td>
+                <td edit="true" edit-type="select" sel-val="1" global-key="STATUS">上线</td>
+            </tr>
+            <tr>
+                <td><input type="checkbox"></td>
+                <td edit="true">BJ_DailyRun</td>
+                <td edit="true">10.0.21.86</td>
+                <td edit="true" edit-type="select" sel-val="2" global-key="STATUS">下线</td>
+            </tr>
+            <tr>
+                <td><input type="checkbox"></td>
+                <td edit="true">KS_BMC_Server</td>
+                <td edit="true">10.8.20.16</td>
+                <td edit="true" edit-type="select" sel-val="3" global-key="STATUS">未知</td>
+            </tr>
+        </tbody>
+    </table>
+    <div style="padding: 30px;">
+        <input class="choice_button" type="button" onclick="AddLine('#tbl');" value="添加">
+        <input class="choice_button" type="button" onclick="DeleteLine('#tbl');" value="删除">
+        <input class="choice_button" type="button" onclick="InsertLine('#tbl');" value="插入">
+    </div>
+
+
+
+<script src="jquery-3.3.1.js"></script>
+<script>
+
+    $(function () {
+        // 页面加载时 为checkbox绑定click事件
+        BindSingleCheck("#edit_mode","#tbl");
+        // 调用全局变量 使用STATUS或者使用window["STATUS"]
+        STATUS = [
+            {"id":"1", "value":"上线"},
+            {"id":"2", "value":"下线"},
+            {"id":"3", "value":"未知"}
+        ];
+        // 新建行的标签
+        NEW_TR = '<tr><td><input type="checkbox"></td><td edit="true"></td><td edit="true"></td><td edit="true" edit-type="select" sel-val="3" global-key="STATUS"></td></tr>';
+        // 键盘按键
+        window.globalCtrlKeyPress = false;
+        window.onkeydown = function (event) {
+        if(event.key == "Control"){
+            window.globalCtrlKeyPress = true;
+            // console.log("Press Control");
+            }
+        };
+        window.onkeyup = function (event) {
+        if(event.key == "Control"){
+            window.globalCtrlKeyPress = false;
+            // console.log("Leave Control");
+            }
+        };
+
+    });
+    
+    setInterval("string_rolling('title')",500);
+
+    function string_rolling(tag) {
+        var _id = $(tag);
+        var text = _id.text();
+        var firstText = text.charAt(0);
+        var subText = text.substring(1,text.length);
+        _id.text(subText+firstText);
+    }
+    
+    // 若处于编辑模式 点击checkbox 该行将进入编辑模式
+    function BindSingleCheck(mode,tb) {
+        // delegate 调用时才绑定; bind 开始就绑定
+        // $(tb).find("input[type='checkbox']").bind("click", function () {
+        $(tb).delegate("input[type='checkbox']","click", function () {
+            var _tr = $(this).parent().parent();
+            if($(mode).hasClass('editing')){
+                if($(this).prop("checked")){
+                    RowIntoEdit(_tr);
+                }else{
+                    RowOutEdit(_tr);
+                }
+            }
+        });
+    }
+
+    function EditMode(ths,tb) {
+        var isEdit = $(ths).hasClass("editing");
+        if(isEdit){
+            $(ths).attr("value","进入编辑模式");
+            $(ths).removeClass("editing");
+            $(tb).children().each(function () {
+                var _tr = $(this);
+                var check_box = _tr.children().first().find("input[type='checkbox']");
+                if(check_box.prop("checked")){
+                    RowOutEdit(_tr);
+                }
+            });
+        }else{
+            $(ths).attr("value","退出编辑模式");
+            $(ths).addClass("editing");
+            $(tb).children().each(function () {
+                var _tr = $(this);
+                var check_box = _tr.children().first().find("input[type='checkbox']");
+                if(check_box.prop("checked")){
+                    RowIntoEdit(_tr);
+                }
+            });
+        }
+    }
+    
+    function CheckAll(mode,tb) {
+        // mode = "#edit_mode" a标签的id; tb = "#tbl" table的id
+        if($(mode).hasClass('editing')){
+            // 选中所有的checkbox 并将所有行处理成进入编辑模式
+            $(tb).children().each(function () {
+                var _tr = $(this);
+                var check_box = _tr.children().first().find("input[type='checkbox']");
+                if(!check_box.prop("checked")){
+                    check_box.prop("checked",true);
+                }
+                // 让这一行进入编辑模式  参数:选择器当前行
+                RowIntoEdit(_tr);
+            })
+        }else{
+            // ":checkbox" 等同于 "input[type='checkbox']"
+            $(tb).find("input[type='checkbox']").prop("checked",true);
+        }
+    }
+
+    function CheckReverse(mode,tb) {
+        if($(mode).hasClass("editing")){
+            $(tb).children().each(function () {
+                var _tr = $(this);
+                var check_box = _tr.children().first().find("input[type='checkbox']");
+                if(check_box.prop("checked")){
+                    check_box.prop("checked",false);
+                    RowOutEdit(_tr);
+                }else{
+                    check_box.prop("checked",true);
+                    RowIntoEdit(_tr);
+                }
+            })
+        }else{
+            $(tb).find("input[type='checkbox']").each(function () {
+                var isChecked = $(this).prop("checked");
+                if(isChecked){
+                    $(this).prop("checked",false);
+                }else{
+                    $(this).prop("checked",true);
+                }
+            });
+        }
+    }
+    
+    function CheckCancel(mode,tb) {
+        if($(mode).hasClass("editing")){
+            $(tb).children().each(function () {
+                var _tr = $(this);
+                var check_box = _tr.children().first().find("input[type='checkbox']");
+                if(check_box.prop("checked")){
+                    check_box.prop("checked",false);
+                }
+                RowOutEdit(_tr);
+            })
+        }else{
+            $(tb).find("input[type='checkbox']").prop("checked",false);
+        }
+    }
+
+    function RowIntoEdit(_tr) {
+        // 普通内容 创建input; 选择 创建select
+        _tr.children().each(function () {
+            // $(this) 当前的元素 td
+            if($(this).attr("edit") == "true"){
+                if($(this).attr("edit-type") == "select"){
+                    var _td = $(this);
+                    var select_val = $(this).attr("sel-val");
+                    var global_key = $(this).attr("global-key");
+                    var select_tag = CreateSelect(_td,select_val,global_key);
+                    _td.html(select_tag);
+
+                }else{
+                    var orgin_value = $(this).text();
+                    var temp = "<input type='text' value='" + orgin_value + "'/>";
+                    $(this).html(temp);
+                }
+            }
+        });
+    }
+
+    function RowOutEdit(_tr) {
+        _tr.children().each(function () {
+            if($(this).attr("edit") == "true"){
+                if($(this).attr("edit-type") == "select"){
+                    var _td = $(this);
+                    var _id = _td.children().val();
+                    $.each(STATUS, function (index,value) {
+                        if(value["id"] == _id){
+                            temp = value["value"];
+                        }
+                    });
+                    _td.html(temp);
+                }else{
+                    var text_input = $(this).find("input[type='text']");
+                    var _value = text_input.val();
+                    $(this).html(_value);
+                }
+            }
+        });
+    }
+    
+    function CreateSelect(_td,select_val,global_key) {
+        // 创建select标签
+        var _array = window[global_key];
+        var temp = "<select>";
+        $.each(_array, function (index,value) {
+            var _id = value["id"];
+            var _value = value["value"];
+            if(value["id"] == select_val){
+                temp = temp + "<option value=" + _id + " selected='selected'>" + _value + "</option>";
+            }else{
+                temp = temp + "<option value=" + _id + ">" + _value + "</option>";
+            }
+        });
+        temp = temp + "</select>";
+        return temp;
+    }
+
+    function AddLine(tb) {
+        /* 使用clone方式 当无标签时 无法实现增加新的一行
+        var last_tr = $(tb).children().last();
+        var new_tr = last_tr.clone(true);
+        new_tr.children().eq(0).children().prop("checked",false);
+        for(var i=1;i<=3;i++){
+            new_tr.children().eq(i).html("");
+        }
+        new_tr.insertAfter(last_tr);*/
+        $(tb).append(NEW_TR);
+    }
+    
+    function DeleteLine(tb) {
+        var flag = false;
+        $(tb).children().each(function () {
+            var _tr = $(this);
+            var check_box = _tr.children().first().find("input[type='checkbox']");
+            if(check_box.prop("checked")){
+                _tr.remove();
+                flag = true;
+            }
+        });
+        if(!flag){
+            alert("请选择要删除的行!");
+        }
+    }
+
+    function InsertLine(tb) {
+        var flag = false;
+        $(tb).children().each(function () {
+            var _tr = $(this);
+            var check_box = _tr.children().first().find("input[type='checkbox']");
+            if(check_box.prop("checked")){
+                if(window.globalCtrlKeyPress){
+                    // 插入时 如果按住Control键 选取的行的内容将被插入
+                    _tr.clone(true).insertAfter(_tr);
+                }else{
+                    _tr.after(NEW_TR);
+                }
+                flag = true;
+            }
+        });
+        if(!flag){
+            alert("请选择要插入的位置!");
+        }
+    }
+
+
+
+
+</script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Demo04</title>
+    <style>
+        .go-top{
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+        }
+        .hide{
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div style="height: 2000px;background-color: #dddddd;">
+        <div id="content" style="height: 200px; background-color: lightblue; overflow: auto">
+            <p>Content</p>
+            <p>Content</p>
+            <p>Content</p>
+            <p>Content</p>
+            <p>Content</p>
+            <p>Content</p>
+            <p>Content</p>
+            <p>Content</p>
+        </div>
+        <div>
+            <a href="" onclick="smallGoTop();">小窗返回顶部</a>
+        </div>
+    </div>
+    <div class="go-top hide">
+        <a href="" onclick="GoTop();">返回顶部</a>
+    </div>
+
+
+
+
+
+
+
+
+
+<script src="jquery-3.3.1.js"></script>
+<script>
+    // 返回顶部
+    function GoTop() {
+        $(window).scrollTop(0);
+    }
+
+    function smallGoTop() {
+        $("#content").scrollTop(0);
+    }
+    // 默认返回顶部不出现
+    window.onscroll = function () {
+        var currentTop = $(window).scrollTop();
+        if(currentTop>100){
+            $(".go-top").removeClass("hide");
+        }else{
+            $(".go-top").addClass("hide");
+        }
+        // if($(window).height()+$(window).scrollTop() == $(document).height()){
+        //     console.log("bottom");
+        // }else{
+        //     console.log("continue");
+        // }
+    };
+
+
+
+
+
+
+</script>
+</body>
+</html>

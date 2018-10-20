@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Demo05</title>
+</head>
+<body>
+
+    <div style="border: 1px solid #ddd; width: 600px; position: absolute;">
+        <div id="title" style="background-color: black; line-height: 40px; color: white; text-align: center;">
+            标题
+        </div>
+        <div style="height: 300px;">
+            内容
+        </div>
+    </div>
+
+
+
+<script src="jquery-3.3.1.js"></script>
+<script>
+
+    $(function () {
+        // 页面加载完成后自动执行
+        // 链式编程
+        $("#title").mouseover(function () {
+            $(this).css("cursor","move");
+        }).mousedown(function (e) {
+            var _event = e || window.event;
+            var ord_x = _event.clientX;
+            var ord_y = _event.clientY;
+
+            var parent_left = $(this).parent().offset().left;
+            var parent_top = $(this).parent().offset().top;
+
+            $(this).bind("mousemove", function (e) {
+                var _new_event = e || window.event;
+                var _new_x = _new_event.clientX;
+                var _new_y = _new_event.clientY;
+
+                var _left = parent_left + (_new_x - ord_x);
+                var _top = parent_top + (_new_y - ord_y);
+                $(this).parent().offset({top:_top,left:_left});
+            })
+        }).mouseup(function () {
+            $(this).unbind("mousemove");
+        });
+
+
+
+
+    })
+
+
+
+
+
+
+
+</script>
+</body>
+</html>
