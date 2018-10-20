@@ -1,8 +1,0 @@
-v01：
-0. 测试前Linux系统需要安装expect，ssh-copy-id工具，python需要安装paramiko和matplotlib模块(eg: yum install expect, pip install paramiko)
-1. 测试参数可以bash xxxx.sh -h查看
-    使用-L参数可以选择测试的LAN number，例如：-L 1 或者 -L 1,8
-    使用-I选择是否进行带内测试 默认不进行
-2. 每圈测试记录关机下电，超过20s认为FAIL
-3. 每圈ssh登录到系统下进行machinecheck检测，和第一次的标准值进行对比，需要将MachineCheck_Release_mini.tgz的压缩包放在目录下
-4. 记录上电过程中风扇转速情况并作曲线图
