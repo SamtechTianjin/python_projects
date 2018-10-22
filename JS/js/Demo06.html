@@ -7,11 +7,11 @@
         .edit-mode {
             background-color: #8DBE5A;
             font-weight: bold;
-            font-size: 16px;
+            font-size: 12px;
             color: white;
             display: inline-block;
-            width: 160px;
-            line-height: 40px;
+            width: 100px;
+            line-height: 24px;
             text-align: center;
         }
         .editing {
@@ -19,27 +19,46 @@
             color: white;
         }
         .choice_button {
-            height: 30px;
-            width: 60px;
-            font-size: 16px;
+            height: 24px;
+            width: 48px;
+            font-size: 12px;
             font-weight: bold;
         }
         .main {
+            border: 1px solid red;
             margin: 0 auto;
             width: 600px;
-            border: 1px solid red;
+            display: block;
+        }
+        .buttons {
+            border: 1px solid black;
+            padding-top: 10px;
+            padding-bottom: 10px;
+            float: right;
+            margin-right: 20px;
+        }
+        .main_title {
+            background-color: blueviolet;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            margin: 20px auto;
+            width: 600px;
+            line-height: 40px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
-    <div class="main">HAHAHHA</div>
-    <div style="padding: 30px;">
+<div class="main_title">服务器信息列表</div>
+<div class="main">
+    <div class="buttons">
         <input class="choice_button" type="button" value="全选" onclick="CheckAll('#edit_mode','#tbl');">
         <input class="choice_button" type="button" value="反选" onclick="CheckReverse('#edit_mode','#tbl');">
         <input class="choice_button" type="button" value="取消" onclick="CheckCancel('#edit_mode','#tbl');">
         <input type="button" value="进入编辑模式" id="edit_mode" class="edit-mode" onclick="EditMode(this,'#tbl');">
     </div>
-    <table border="1" style="text-align: center">
+    <table border="1" style="text-align: center; margin: auto">
         <thead>
             <tr>
                 <th style="width: 60px">选择</th>
@@ -69,12 +88,12 @@
             </tr>
         </tbody>
     </table>
-    <div style="padding: 30px;">
+    <div class="buttons">
         <input class="choice_button" type="button" onclick="AddLine('#tbl');" value="添加">
         <input class="choice_button" type="button" onclick="DeleteLine('#tbl');" value="删除">
         <input class="choice_button" type="button" onclick="InsertLine('#tbl');" value="插入">
     </div>
-
+</div>
 
 
 <script src="jquery-3.3.1.js"></script>
