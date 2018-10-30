@@ -1,0 +1,10 @@
+# Test Cases
+# 书写顺序即测试执行顺序，根据需要编辑即可
+# 格式：package/module = 0 or 1
+
+Switch/Check_Switch_Info = 0
+Power/Check_Power_Info = 1
+Fan/Check_Fan_Info = 1
+
+
+

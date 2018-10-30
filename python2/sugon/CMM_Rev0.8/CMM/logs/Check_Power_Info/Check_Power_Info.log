@@ -1,0 +1,60 @@
+#==========================================================#
+#                  Case: Check Power Info                  #
+#==========================================================#
+2018-10-30 11:46:32	[curl] Login Web successfully.
+Check power info
+PSU 1
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x51 0x00 2>/dev/null
+returncode: 0
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+ 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+ 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+ 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+ 00 00
+PSU 1
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:YKz2G3wd" -d"{'id':1}" http://10.0.22.234/api/cmminfo/psus/ -b cookie 2>/dev/null
+returncode: 0
+{ "id": 1, "psuPresent": 0, "Vendor": "", "Present": "N\/A", "Model": "", "SN": "", "isPSUOn": "", "Vin": "", "Iin": "", "Pin": "", "Iout": "", "Vout": "", "Pout": "", "Temp1": "", "Temp2": "", "Fan1Speed": "", "FanDuty": "" }
+[PSU1] Check power info PASS.
+PSU 2
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x51 0x01 2>/dev/null
+returncode: 0
+01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+ 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+ 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+ 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+ 00 00
+PSU 2
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:YKz2G3wd" -d"{'id':2}" http://10.0.22.234/api/cmminfo/psus/ -b cookie 2>/dev/null
+returncode: 0
+{ "id": 2, "psuPresent": 0, "Vendor": "", "Present": "N\/A", "Model": "", "SN": "", "isPSUOn": "", "Vin": "", "Iin": "", "Pin": "", "Iout": "", "Vout": "", "Pout": "", "Temp1": "", "Temp2": "", "Fan1Speed": "", "FanDuty": "" }
+[PSU2] Check power info PASS.
+PSU 3
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x51 0x02 2>/dev/null
+returncode: 0
+02 01 00 00 01 00 00 00 00 00 00 00 00 00 00 00
+ 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+ 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+ 00 00 00 00 00 29 22 a0 55 8f 00 a3 00 3e dd 1b
+ 00 01
+PSU 3
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:YKz2G3wd" -d"{'id':3}" http://10.0.22.234/api/cmminfo/psus/ -b cookie 2>/dev/null
+returncode: 0
+{ "id": 3, "psuPresent": 1, "Vendor": "", "Present": "Present", "Model": "", "SN": "", "isPSUOn": "ON", "Vin": "221", "Iin": "0", "Pin": "163", "Iout": "27", "Vout": "62", "Pout": "143", "Temp1": 41, "Temp2": 34, "Fan1Speed": 21920, "FanDuty": 1 }
+[PSU3] Check power info PASS.
+PSU 4
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x51 0x03 2>/dev/null
+returncode: 0
+03 01 00 00 01 00 00 00 00 00 00 00 00 00 00 00
+ 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+ 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+ 00 00 00 00 00 28 1d 20 55 85 00 9d 00 3e dd 1b
+ 00 01
+PSU 4
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:YKz2G3wd" -d"{'id':4}" http://10.0.22.234/api/cmminfo/psus/ -b cookie 2>/dev/null
+returncode: 0
+{ "id": 4, "psuPresent": 1, "Vendor": "", "Present": "Present", "Model": "", "SN": "", "isPSUOn": "ON", "Vin": "221", "Iin": "0", "Pin": "157", "Iout": "27", "Vout": "62", "Pout": "133", "Temp1": 40, "Temp2": 29, "Fan1Speed": 21792, "FanDuty": 1 }
+[PSU4] Check power info PASS.
+Set power via OEM command
+Set power via Web API
+2018-10-30 11:46:37	[curl] Logout Web successfully.

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>~编辑行内容的JavaScript练习~</title>
+    <title>~Log Server~</title>
     <style type="text/css">
         .edit-mode {
             background-color: #8DBE5A;
@@ -25,14 +25,14 @@
             font-weight: bold;
         }
         .main {
-            border: 1px solid red;
+            border: 1px solid black;
             margin: 0 auto;
             width: 600px;
             height: auto;
-            background-color: #dddddd;
+            background-color: white;
         }
         .buttons_top {
-            border: 1px solid black;
+            /*border: 1px solid black;*/
             padding-top: 10px;
             padding-bottom: 2px;
             display: inline-block;
@@ -54,12 +54,19 @@
             line-height: 40px;
             text-align: center;
         }
+        .log {
+            color: blue;
+            cursor: pointer;
+        }
+        .hide {
+            display: none;
+        }
     </style>
 </head>
 <body>
 
 <div class="main">
-    <div class="main_title">服务器信息列表</div>
+    <div class="main_title">串口服务器日志</div>
     <div class="buttons_top">
         <input class="choice_button" type="button" value="全选" onclick="CheckAll('#edit_mode','#tbl');">
         <input class="choice_button" type="button" value="反选" onclick="CheckReverse('#edit_mode','#tbl');">
@@ -67,42 +74,42 @@
         <input type="button" value="进入编辑模式" id="edit_mode" class="edit-mode" onclick="EditMode(this,'#tbl');">
     </div>
     <div>
-    <table border="1" style="text-align: center; margin: auto">
+    <table border="1" style="text-align: center; margin: auto; font-size: 14px">
         <thead>
             <tr>
                 <th style="width: 60px">选择</th>
-                <th style="width: 240px">主机名</th>
-                <th style="width: 160px">IP地址</th>
-                <th style="width: 80px">状态</th>
+                <th style="width: 200px">串口日志</th>
+                <th style="width: 200px">备注名</th>
+                <th style="width: 80px">地点</th>
             </tr>
         </thead>
         <tbody id="tbl">
             <tr>
                 <td><input type="checkbox"></td>
-                <td edit="true">TJ_BMC_Server</td>
-                <td edit="true">10.2.39.240</td>
-                <td edit="true" edit-type="select" sel-val="1" global-key="STATUS">上线</td>
+                <td><span class="log">10.0.21.101_5000</span></td>
+                <td edit="true">JHSBMCS1</td>
+                <td edit="true" edit-type="select" sel-val="1" global-key="LOCATION">北京</td>
             </tr>
             <tr>
                 <td><input type="checkbox"></td>
-                <td edit="true">BJ_DailyRun</td>
-                <td edit="true">10.0.21.86</td>
-                <td edit="true" edit-type="select" sel-val="2" global-key="STATUS">下线</td>
+                <td><span class="log" onclick="ShowDirectory();">10.2.39.240_5100</span></td>
+                <td edit="true">JGSBMCS4</td>
+                <td edit="true" edit-type="select" sel-val="2" global-key="LOCATION">天津</td>
             </tr>
             <tr>
                 <td><input type="checkbox"></td>
-                <td edit="true">KS_BMC_Server</td>
-                <td edit="true">10.8.20.16</td>
-                <td edit="true" edit-type="select" sel-val="3" global-key="STATUS">未知</td>
+                <td><span class="log">10.8.20.195_5400</span></td>
+                <td edit="true">WYSBMCS2</td>
+                <td edit="true" edit-type="select" sel-val="3" global-key="LOCATION">昆山</td>
             </tr>
         </tbody>
     </table>
     </div>
-    <div class="buttons_bottom">
-        <input class="choice_button" type="button" onclick="AddLine('#tbl');" value="添加">
-        <input class="choice_button" type="button" onclick="DeleteLine('#tbl');" value="删除">
-        <input class="choice_button" type="button" onclick="InsertLine('#tbl');" value="插入">
-    </div>
+    <!--<div class="buttons_bottom">-->
+        <!--<input class="choice_button" type="button" onclick="AddLine('#tbl');" value="添加">-->
+        <!--<input class="choice_button" type="button" onclick="DeleteLine('#tbl');" value="删除">-->
+        <!--<input class="choice_button" type="button" onclick="InsertLine('#tbl');" value="插入">-->
+    <!--</div>-->
 </div>
 
 
@@ -113,10 +120,11 @@
         // 页面加载时 为checkbox绑定click事件
         BindSingleCheck("#edit_mode","#tbl");
         // 调用全局变量 使用STATUS或者使用window["STATUS"]
-        STATUS = [
-            {"id":"1", "value":"上线"},
-            {"id":"2", "value":"下线"},
-            {"id":"3", "value":"未知"}
+        LOCATION = [
+            {"id":"1", "value":"北京"},
+            {"id":"2", "value":"天津"},
+            {"id":"3", "value":"昆山"},
+            {"id":"4", "value":"未知"}
         ];
         // 新建行的标签
         NEW_TR = '<tr><td><input type="checkbox"></td><td edit="true"></td><td edit="true"></td><td edit="true" edit-type="select" sel-val="3" global-key="STATUS"></td></tr>';
@@ -136,7 +144,7 @@
         };
 
     });
-    
+
     setInterval("string_rolling('title')",500);
 
     function string_rolling(tag) {
@@ -146,7 +154,7 @@
         var subText = text.substring(1,text.length);
         _id.text(subText+firstText);
     }
-    
+
     // 若处于编辑模式 点击checkbox 该行将进入编辑模式
     function BindSingleCheck(mode,tb) {
         // delegate 调用时才绑定; bind 开始就绑定
@@ -187,7 +195,7 @@
             });
         }
     }
-    
+
     function CheckAll(mode,tb) {
         // mode = "#edit_mode" a标签的id; tb = "#tbl" table的id
         if($(mode).hasClass('editing')){
@@ -231,7 +239,7 @@
             });
         }
     }
-    
+
     function CheckCancel(mode,tb) {
         if($(mode).hasClass("editing")){
             $(tb).children().each(function () {
@@ -288,7 +296,7 @@
             }
         });
     }
-    
+
     function CreateSelect(_td,select_val,global_key) {
         // 创建select标签
         var _array = window[global_key];
@@ -317,7 +325,7 @@
         new_tr.insertAfter(last_tr);*/
         $(tb).append(NEW_TR);
     }
-    
+
     function DeleteLine(tb) {
         var flag = false;
         $(tb).children().each(function () {
@@ -351,6 +359,10 @@
         if(!flag){
             alert("请选择要插入的位置!");
         }
+    }
+
+    function ShowDirectory() {
+
     }
 
 

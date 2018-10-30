@@ -1,0 +1,534 @@
+#==========================================================#
+#                   Case: Check Fan Info                   #
+#==========================================================#
+2018-10-30 11:46:46	[curl] Login Web successfully.
+Check fan info
+FAN 1
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x00 2>/dev/null
+returncode: 0
+00 02 01 21 3f 0c 8b 0a
+FAN 1
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':1}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 1, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 3135, "FanSpeed2": 2699, "Duty": 33 } ]
+[FAN1] Check fan info PASS.
+FAN 2
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x01 2>/dev/null
+returncode: 0
+01 02 01 21 60 0c 83 0a
+FAN 2
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':2}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 2, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 3168, "FanSpeed2": 2691, "Duty": 33 } ]
+[FAN2] Check fan info PASS.
+FAN 3
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x02 2>/dev/null
+returncode: 0
+02 02 01 21 93 0c c5 0a
+FAN 3
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':3}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 3, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 3219, "FanSpeed2": 2757, "Duty": 33 } ]
+[FAN3] Check fan info PASS.
+FAN 4
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x03 2>/dev/null
+returncode: 0
+03 02 01 21 6f 0c a3 0a
+FAN 4
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':4}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 4, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 3183, "FanSpeed2": 2723, "Duty": 33 } ]
+[FAN4] Check fan info PASS.
+FAN 5
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x04 2>/dev/null
+returncode: 0
+04 02 01 21 61 0c 81 0a
+FAN 5
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':5}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 5, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 3169, "FanSpeed2": 2689, "Duty": 33 } ]
+[FAN5] Check fan info PASS.
+Set fan via OEM command
+Set and check FAN Duty: [30, 40, 50, 60, 70, 80, 90, 100]
+FAN 1
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x00 0x02 30
+returncode: 0
+
+FAN 1
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x00 2>/dev/null
+returncode: 0
+00 02 01 1e 1b 0b 65 09
+FAN 1
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':1}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 1, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 2843, "FanSpeed2": 2405, "Duty": 30 } ]
+FAN 1
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x00 0x02 40
+returncode: 0
+
+FAN 1
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x00 2>/dev/null
+returncode: 0
+00 02 01 28 05 0f 2e 0d
+FAN 1
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':1}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 1, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 3845, "FanSpeed2": 3374, "Duty": 40 } ]
+FAN 1
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x00 0x02 50
+returncode: 0
+
+FAN 1
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x00 2>/dev/null
+returncode: 0
+00 02 01 32 f7 12 bb 10
+FAN 1
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':1}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 1, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 4855, "FanSpeed2": 4283, "Duty": 50 } ]
+FAN 1
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x00 0x02 60
+returncode: 0
+
+FAN 1
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x00 2>/dev/null
+returncode: 0
+00 02 01 3c e0 16 fc 13
+FAN 1
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':1}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 1, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 5856, "FanSpeed2": 5116, "Duty": 60 } ]
+FAN 1
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x00 0x02 70
+returncode: 0
+
+FAN 1
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x00 2>/dev/null
+returncode: 0
+00 02 01 46 c1 1a 64 17
+FAN 1
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':1}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 1, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 6849, "FanSpeed2": 5988, "Duty": 70 } ]
+FAN 1
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x00 0x02 80
+returncode: 0
+
+FAN 1
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x00 2>/dev/null
+returncode: 0
+00 02 01 50 bb 1e cf 1a
+FAN 1
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':1}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 1, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 7867, "FanSpeed2": 6863, "Duty": 80 } ]
+FAN 1
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x00 0x02 90
+returncode: 0
+
+FAN 1
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x00 2>/dev/null
+returncode: 0
+00 02 01 5a 7a 22 c4 1d
+FAN 1
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':1}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 1, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 8826, "FanSpeed2": 7620, "Duty": 90 } ]
+FAN 1
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x00 0x02 100
+returncode: 0
+
+FAN 1
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x00 2>/dev/null
+returncode: 0
+00 02 01 64 cd 26 b6 21
+FAN 1
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':1}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 1, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 9933, "FanSpeed2": 8630, "Duty": 100 } ]
+FAN 2
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x01 0x02 30
+returncode: 0
+
+FAN 2
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x01 2>/dev/null
+returncode: 0
+01 02 01 1e 37 0a b1 07
+FAN 2
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':2}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 2, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 2615, "FanSpeed2": 1969, "Duty": 30 } ]
+FAN 2
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x01 0x02 40
+returncode: 0
+
+FAN 2
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x01 2>/dev/null
+returncode: 0
+01 02 01 28 13 0f 51 0d
+FAN 2
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':2}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 2, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 3859, "FanSpeed2": 3409, "Duty": 40 } ]
+FAN 2
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x01 0x02 50
+returncode: 0
+
+FAN 2
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x01 2>/dev/null
+returncode: 0
+01 02 01 32 09 13 b3 10
+FAN 2
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':2}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 2, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 4873, "FanSpeed2": 4275, "Duty": 50 } ]
+FAN 2
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x01 0x02 60
+returncode: 0
+
+FAN 2
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x01 2>/dev/null
+returncode: 0
+01 02 01 3c ef 16 f4 13
+FAN 2
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':2}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 2, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 5871, "FanSpeed2": 5108, "Duty": 60 } ]
+FAN 2
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x01 0x02 70
+returncode: 0
+
+FAN 2
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x01 2>/dev/null
+returncode: 0
+01 02 01 46 e8 1a 3a 17
+FAN 2
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':2}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 2, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 6888, "FanSpeed2": 5946, "Duty": 70 } ]
+FAN 2
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x01 0x02 80
+returncode: 0
+
+FAN 2
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x01 2>/dev/null
+returncode: 0
+01 02 01 50 d8 1e ed 1a
+FAN 2
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':2}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 2, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 7896, "FanSpeed2": 6893, "Duty": 80 } ]
+FAN 2
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x01 0x02 90
+returncode: 0
+
+FAN 2
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x01 2>/dev/null
+returncode: 0
+01 02 01 5a cf 22 af 1d
+FAN 2
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':2}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 2, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 8911, "FanSpeed2": 7599, "Duty": 90 } ]
+FAN 2
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x01 0x02 100
+returncode: 0
+
+FAN 2
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x01 2>/dev/null
+returncode: 0
+01 02 01 64 ee 26 8b 21
+FAN 2
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':2}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 2, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 9966, "FanSpeed2": 8587, "Duty": 100 } ]
+FAN 3
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x02 0x02 30
+returncode: 0
+
+FAN 3
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x02 2>/dev/null
+returncode: 0
+02 02 01 1e ad 0c 5f 09
+FAN 3
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':3}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 3, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 3245, "FanSpeed2": 2399, "Duty": 30 } ]
+FAN 3
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x02 0x02 40
+returncode: 0
+
+FAN 3
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x02 2>/dev/null
+returncode: 0
+02 02 01 28 40 0f 69 0d
+FAN 3
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':3}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 3, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 3904, "FanSpeed2": 3433, "Duty": 40 } ]
+FAN 3
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x02 0x02 50
+returncode: 0
+
+FAN 3
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x02 2>/dev/null
+returncode: 0
+02 02 01 32 31 13 01 11
+FAN 3
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':3}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 3, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 4913, "FanSpeed2": 4353, "Duty": 50 } ]
+FAN 3
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x02 0x02 60
+returncode: 0
+
+FAN 3
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x02 2>/dev/null
+returncode: 0
+02 02 01 3c 15 17 3d 14
+FAN 3
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':3}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 3, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 5909, "FanSpeed2": 5182, "Duty": 60 } ]
+FAN 3
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x02 0x02 70
+returncode: 0
+
+FAN 3
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x02 2>/dev/null
+returncode: 0
+02 02 01 46 d7 1a c2 17
+FAN 3
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':3}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 3, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 6871, "FanSpeed2": 6082, "Duty": 70 } ]
+FAN 3
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x02 0x02 80
+returncode: 0
+
+FAN 3
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x02 2>/dev/null
+returncode: 0
+02 02 01 50 f2 1e 09 1b
+FAN 3
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':3}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 3, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 7922, "FanSpeed2": 6921, "Duty": 80 } ]
+FAN 3
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x02 0x02 90
+returncode: 0
+
+FAN 3
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x02 2>/dev/null
+returncode: 0
+02 02 01 5a bc 22 2c 1e
+FAN 3
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':3}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 3, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 8892, "FanSpeed2": 7724, "Duty": 90 } ]
+FAN 3
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x02 0x02 100
+returncode: 0
+
+FAN 3
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x02 2>/dev/null
+returncode: 0
+02 02 01 64 fa 26 00 22
+FAN 3
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':3}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 3, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 9978, "FanSpeed2": 8704, "Duty": 100 } ]
+FAN 4
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x03 0x02 30
+returncode: 0
+
+FAN 4
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x03 2>/dev/null
+returncode: 0
+03 02 01 1e 41 0b 1e 09
+FAN 4
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':4}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 4, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 2881, "FanSpeed2": 2334, "Duty": 30 } ]
+FAN 4
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x03 0x02 40
+returncode: 0
+
+FAN 4
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x03 2>/dev/null
+returncode: 0
+03 02 01 28 45 0f 5c 0d
+FAN 4
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':4}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 4, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 3909, "FanSpeed2": 3420, "Duty": 40 } ]
+FAN 4
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x03 0x02 50
+returncode: 0
+
+FAN 4
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x03 2>/dev/null
+returncode: 0
+03 02 01 32 16 13 e3 10
+FAN 4
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':4}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 4, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 4886, "FanSpeed2": 4323, "Duty": 50 } ]
+FAN 4
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x03 0x02 60
+returncode: 0
+
+FAN 4
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x03 2>/dev/null
+returncode: 0
+03 02 01 3c 24 17 2b 14
+FAN 4
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':4}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 4, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 5924, "FanSpeed2": 5163, "Duty": 60 } ]
+FAN 4
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x03 0x02 70
+returncode: 0
+
+FAN 4
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x03 2>/dev/null
+returncode: 0
+03 02 01 46 df 1a 78 17
+FAN 4
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':4}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 4, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 6879, "FanSpeed2": 6008, "Duty": 70 } ]
+FAN 4
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x03 0x02 80
+returncode: 0
+
+FAN 4
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x03 2>/dev/null
+returncode: 0
+03 02 01 50 0d 1f 2a 1b
+FAN 4
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':4}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 4, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 7949, "FanSpeed2": 6954, "Duty": 80 } ]
+FAN 4
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x03 0x02 90
+returncode: 0
+
+FAN 4
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x03 2>/dev/null
+returncode: 0
+03 02 01 5a db 22 f6 1d
+FAN 4
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':4}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 4, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 8923, "FanSpeed2": 7670, "Duty": 90 } ]
+FAN 4
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x03 0x02 100
+returncode: 0
+
+FAN 4
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x03 2>/dev/null
+returncode: 0
+03 02 01 64 07 27 bb 21
+FAN 4
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':4}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 4, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 9991, "FanSpeed2": 8635, "Duty": 100 } ]
+FAN 5
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x04 0x02 30
+returncode: 0
+
+FAN 5
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x04 2>/dev/null
+returncode: 0
+04 02 01 1e 35 0b 4b 09
+FAN 5
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':5}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 5, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 2859, "FanSpeed2": 2379, "Duty": 30 } ]
+FAN 5
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x04 0x02 40
+returncode: 0
+
+FAN 5
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x04 2>/dev/null
+returncode: 0
+04 02 01 28 13 0f 17 0d
+FAN 5
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':5}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 5, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 3859, "FanSpeed2": 3351, "Duty": 40 } ]
+FAN 5
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x04 0x02 50
+returncode: 0
+
+FAN 5
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x04 2>/dev/null
+returncode: 0
+04 02 01 32 0b 13 a5 10
+FAN 5
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':5}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 5, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 4875, "FanSpeed2": 4261, "Duty": 50 } ]
+FAN 5
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x04 0x02 60
+returncode: 0
+
+FAN 5
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x04 2>/dev/null
+returncode: 0
+04 02 01 3c f8 16 db 13
+FAN 5
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':5}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 5, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 5880, "FanSpeed2": 5083, "Duty": 60 } ]
+FAN 5
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x04 0x02 70
+returncode: 0
+
+FAN 5
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x04 2>/dev/null
+returncode: 0
+04 02 01 46 cf 1a 53 17
+FAN 5
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':5}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 5, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 6863, "FanSpeed2": 5971, "Duty": 70 } ]
+FAN 5
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x04 0x02 80
+returncode: 0
+
+FAN 5
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x04 2>/dev/null
+returncode: 0
+04 02 01 50 d2 1e b2 1a
+FAN 5
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':5}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 5, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 7888, "FanSpeed2": 6833, "Duty": 80 } ]
+FAN 5
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x04 0x02 90
+returncode: 0
+
+FAN 5
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x04 2>/dev/null
+returncode: 0
+04 02 01 5a b3 22 c6 1d
+FAN 5
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':5}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 5, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 8875, "FanSpeed2": 7622, "Duty": 90 } ]
+FAN 5
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x52 0x04 0x02 100
+returncode: 0
+
+FAN 5
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x53 0x04 2>/dev/null
+returncode: 0
+04 02 01 64 f9 26 91 21
+FAN 5
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:FzhyvnTH" -d"{'id':5}" http://10.0.22.234/api/cmminfo/fans/ -b cookie 2>/dev/null
+returncode: 0
+[ { "id": 5, "FanPresent": 1, "Present": "Present", "FanStatus": 2, "FanSpeed1": 9978, "FanSpeed2": 8593, "Duty": 100 } ]
+Result: PASS
+2018-10-30 11:55:04	[curl] Logout Web successfully.
