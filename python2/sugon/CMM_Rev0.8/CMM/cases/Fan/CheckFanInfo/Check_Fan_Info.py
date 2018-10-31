@@ -96,7 +96,6 @@ def SetFanDutyViaOEM(id,Duty):
 
 def CheckFanDuty(id,Duty):
     global CASE_PASS
-    ID = id - 1
     OEM_info = GetFanInfoViaOEM(id)
     API_info = GetFanInfoViaAPI(CSRFToken,id)
     if OEM_info and API_info:
@@ -255,6 +254,7 @@ class CMMTest(unittest.TestCase,CMM):
                     fail_text = "[OEM] {0} Duty: {1}\n[API] {0} Duty: {2}".format(fan,OEM_Duty,API_Duty)
                     CMM.save_data(main_log,fail_text,timestamp=False)
                     CMM.show_message(fail_text,timestamp=False)
+                """
                 # Check FAN FanSpeed
                 OEM_FanSpeed1 = parse_FanSpeed(temp_list,index=1)
                 OEM_FanSpeed2 = parse_FanSpeed(temp_list,index=2)
@@ -266,6 +266,7 @@ class CMMTest(unittest.TestCase,CMM):
                         (fan,OEM_FanSpeed1,OEM_FanSpeed2,API_FanSpeed1,API_FanSpeed2)
                     CMM.save_data(main_log,fail_text,timestamp=False)
                     CMM.show_message(fail_text,timestamp=False)
+                """
             else:
                 CASE_PASS = False
                 return False
@@ -333,11 +334,6 @@ class CMMTest(unittest.TestCase,CMM):
     #     temp_text = "Set fan via Web API"
     #     CMM.show_message(format_item(temp_text), color="green", timestamp=False)
     #     CMM.save_data(main_log, temp_text, timestamp=False)
-
-
-
-
-
 
     def g_curl_logout(self):
         if LOG_FAIL:

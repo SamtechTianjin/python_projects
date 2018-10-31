@@ -17,8 +17,12 @@ from conf.config import CMM_version
 处理logs/main.log的测试结果，生成PDF测试报告
 """
 
-FAN_LIST = []
-PSU_DICT = {}
+FAN_API_LIST = []
+FAN_OEM_LIST = []
+PSU_API_DICT = {}
+PSU_OEM_DICT = {}
+TABLE_NUM = 1
+
 
 class PDFCreator(object):
 
@@ -49,7 +53,7 @@ class PDFCreator(object):
     def __init__(self,filename):
         self.can = Canvas(filename=filename)
 
-    def head(self,log_data=None,headtext=None,page=None):
+    def head(self,log_data=None,headtext=None,page=None,page_show=True):
         # PDF封面
         if page == "cover":
             self.can.setFillColor(aColor=colors.black)
@@ -100,8 +104,9 @@ class PDFCreator(object):
             # 设定页码
             self.can.line(x1=self.line_start, y1=self.content_bottom_line, x2=self.line_end,y2=self.content_bottom_line)
             self.can.setFont(psfontname=self.content_font, size=self.page_number_font_size)
-            self.can.drawString(x=self.page_number_x, y=self.page_number_y, text="{0}".format(self.page_number))
-            self.page_number += 1
+            if page_show:
+                self.can.drawString(x=self.page_number_x, y=self.page_number_y, text="{0}".format(self.page_number))
+                self.page_number += 1
         # 测试结果详细信息
         else:
             self.can.setFillColor(aColor=colors.black)
@@ -110,11 +115,12 @@ class PDFCreator(object):
             # 设定页码
             self.can.line(x1=self.line_start,y1=self.content_bottom_line,x2=self.line_end,y2=self.content_bottom_line)
             self.can.setFont(psfontname=self.content_font,size=self.page_number_font_size)
-            self.can.drawString(x=self.page_number_x,y=self.page_number_y,text="{0}".format(self.page_number))
-            self.page_number += 1
+            if page_show:
+                self.can.drawString(x=self.page_number_x,y=self.page_number_y,text="{0}".format(self.page_number))
+                self.page_number += 1
 
     def parse_log(self):
-        global FAN_LIST
+        global FAN_API_LIST
         global PSU_LIST
         total_dict = collections.OrderedDict()
         pass_dict = collections.OrderedDict()
@@ -151,11 +157,11 @@ class PDFCreator(object):
                     line = re.search(r'INFO:.*',line).group().split("INFO:")[-1].strip()
                 elif re.search(r'FAN\d+_Duty\d+:.*',line):
                     line = re.search(r'FAN.*',line).group().split(":")[-1].strip()
-                    FAN_LIST.append(eval(line))
+                    FAN_API_LIST.append(eval(line))
                 elif re.search(r'PSU_API_\d+:.*',line):
                     line = re.search(r'PSU.*',line).group().strip()
                     key,value = line.split(":",1)
-                    PSU_DICT[key] = eval(value)
+                    PSU_API_DICT[key] = eval(value)
                 else: pass
                 if is_info: value.append(line)
                 line = f.readline().strip()
@@ -203,14 +209,16 @@ class PDFCreator(object):
                         location -= self.content_line_spacing
                 index += 1
             self.can.showPage()
-        elif page == "PSU":
+        elif page == "PSU_API" or page == "PSU_OEM":
+            if not PSU_API_DICT:
+                return False
             location = self.content_start
             self.can.setFont(psfontname=self.title_font,size=14)
             self.can.setFillColor(aColor=colors.darkblue)
             self.can.drawString(x=self.line_start,y=location,text="[PSU details information]")
             location -= 0.5*inch
-            PSU_keys = sorted(PSU_DICT.keys())
-            KEY_keys = PSU_DICT[PSU_keys[0]].keys()
+            PSU_keys = sorted(PSU_API_DICT.keys())
+            KEY_keys = PSU_API_DICT[PSU_keys[0]].keys()
             PSU_num = len(PSU_keys)
             KEY_num = len(KEY_keys)
             if PSU_num == 4:
@@ -246,10 +254,19 @@ class PDFCreator(object):
                                 self.can.setFillColor(aColor=colors.darkblue)
                                 self.can.drawString(x=text_start,y=R_start+0.1*inch,text="{0}".format(KEY_keys[index]))
                                 index += 1
+                            else:
+                                if page == "PSU_API":
+                                    temp_text = "Web API"
+                                elif page == "PSU_OEM":
+                                    temp_text = "OEM CMD"
+                                else:
+                                    temp_text = ""
+                                self.can.setFillColor(aColor=colors.red)
+                                self.can.drawString(x=text_start, y=R_start + 0.1 * inch, text=temp_text)
                             R_start -= row_height
                     else:
                         PSU_key = "PSU_API_{0}".format(psu_index)
-                        PSU_info = PSU_DICT[PSU_key]
+                        PSU_info = PSU_API_DICT[PSU_key]
                         key_index = 0
                         self.can.setFillColor(aColor=colors.black)
                         for R_index in range(KEY_num+1):
@@ -264,7 +281,10 @@ class PDFCreator(object):
                             R_start -= row_height
                     text_start += column_width
                 self.can.showPage()
-        elif page == "FAN":
+        elif page == "FAN_API" or page == "FAN_OEM":
+            global FAN_API_LIST
+            if not FAN_API_LIST:
+                return False
             Duty_list = [item for item in range(30,110,10)]
             location = self.content_start
             self.can.setFont(psfontname=self.title_font,size=14)
@@ -276,20 +296,37 @@ class PDFCreator(object):
             column_width = line_width/6
             column_start = self.line_start+(6.5*inch-line_width)/2
             content_text_start = column_start+0.1*inch
-            FAN_num = len(FAN_LIST)/len(Duty_list)
+            FAN_num = len(FAN_API_LIST)/len(Duty_list)
             TEMP_LIST = []
-            for fan_list in FAN_LIST:
-                temp = "{0} {1}".format(fan_list[0],fan_list[2])
+            for fan_api_list in FAN_API_LIST:
+                if page == "FAN_API":
+                    temp = "{0} {1}".format(fan_api_list[1],fan_api_list[3])
+                else:
+                    temp = "{0} {1}".format(fan_api_list[2],fan_api_list[0])
                 TEMP_LIST.append(temp)
-            table_num = int(FAN_num/5) + 1
+            if FAN_num <= 5:
+                table_num = 1
+            elif FAN_num <= 10:
+                table_num = 2
+            elif FAN_num <=15:
+                table_num = 3
+            elif FAN_num <= 20:
+                table_num = 4
+            else:
+                table_num = 1
+            global TABLE_NUM
+            TABLE_NUM = table_num
+            if table_num == 1 and page == "FAN_OEM":
+                table_location -= (len(Duty_list)+1)*0.3*inch
             fanspeed_index = 0
             fan_index = 1
             for i in range(table_num):
                 num = FAN_num - i*5
                 num = (5 if num >=5 else num) + 1
-                if i%3 == 0:
-                    self.can.showPage()
                 if i >= 3:
+                    if i % 3 == 0:
+                        self.can.showPage()
+                        self.head(log_data, page="content")
                     i = i%3
                 location = table_location - i*9*0.3*inch
                 R_start = location
@@ -318,6 +355,15 @@ class PDFCreator(object):
                                 self.can.setFillColor(aColor=colors.darkblue)
                                 self.can.drawString(x=text_start,y=R_start+0.1*inch,text="Duty={0}".format(Duty_list[index]))
                                 index += 1
+                            else:
+                                self.can.setFillColor(aColor=colors.red)
+                                if page == "FAN_API":
+                                    temp_text = "Web API"
+                                elif page == "FAN_OEM":
+                                    temp_text = "OEM CMD"
+                                else:
+                                    temp_text = ""
+                                self.can.drawString(x=text_start,y=R_start+0.1*inch,text=temp_text)
                             R_start -= row_height
                     else:
                         self.can.setFillColor(aColor=colors.black)
@@ -330,6 +376,8 @@ class PDFCreator(object):
                                 fan_index += 1
                             R_start -= row_height
                     text_start += column_width
+            if table_num == 1 and page == "FAN_API":
+                return
             self.can.showPage()
         else:
             location = 8.3*inch
@@ -357,9 +405,14 @@ class PDFCreator(object):
         pdf.head(log_data, headtext="Result Summary", page="summary")
         pdf.data(log_data, page="summary")
         pdf.head(log_data, page="content")
-        pdf.data(log_data, page="PSU")
+        pdf.data(log_data, page="PSU_API")
         pdf.head(log_data, page="content")
-        pdf.data(log_data, page="FAN")
+        pdf.data(log_data, page="PSU_OEM")
+        pdf.head(log_data, page="content")
+        pdf.data(log_data, page="FAN_API")
+        page_show = False if TABLE_NUM == 1 else True
+        pdf.head(log_data, page="content", page_show=page_show)
+        pdf.data(log_data, page="FAN_OEM")
         pdf.head(log_data, page="content")
         pdf.data(log_data, page="content")
         pdf.save()

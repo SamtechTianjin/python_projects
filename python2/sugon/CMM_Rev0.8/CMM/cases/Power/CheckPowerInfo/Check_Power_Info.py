@@ -107,7 +107,67 @@ def parse_Present(temp_list):
         psuPresent = "Unknown"
     return Present,psuPresent
 
+def parse_FanDuty(temp_list):
+    try:
+        FanDuty = int(temp_list[65],16)
+    except:
+        FanDuty = "Unknown"
+    return FanDuty
 
+def parse_Iin(temp_list):
+    try:
+        Iin = int(temp_list[64],16)
+    except:
+        Iin = "Unknown"
+    return Iin
+
+def parse_Iout(temp_list):
+    try:
+        Iout = int(temp_list[63],16)
+    except:
+        Iout = "Unknown"
+    return Iout
+
+def parse_Vin(temp_list):
+    try:
+        Vin = int(temp_list[62],16)
+    except:
+        Vin = "Unknown"
+    return Vin
+
+def parse_Vout(temp_list):
+    try:
+        Vout = int(temp_list[61],16)
+    except:
+        Vout = "Unknown"
+    return Vout
+
+def parse_Pin(temp_list):
+    try:
+        temp1 = int(temp_list[60],16)*256
+        temp2 = int(temp_list[59],16)
+        Pin = temp1 + temp2
+    except:
+        Pin = "Unknown"
+    return Pin
+
+def parse_Pout(temp_list):
+    try:
+        temp1 = int(temp_list[58],16)*256
+        temp2 = int(temp_list[57],16)
+        Pout = temp1 + temp2
+    except:
+        Pout = "Unknown"
+    return Pout
+
+def parse_Temp(temp_list):
+    try:
+        Temp1 = int(temp_list[53],16)
+        Temp2 = int(temp_list[54],16)
+    except:
+        Temp1 = "Unknown"
+        Temp2 = "Unknown"
+    return Temp1,Temp2
 
 
 
@@ -156,11 +216,13 @@ class CMMTest(unittest.TestCase,CMM):
             is_fail = False
             OEM_info = GetPowerInfoViaOEM(id)
             API_info = GetPowerInfoViaAPI(CSRFToken,id)
-            CMM.save_data(MAIN_LOG,"PSU_OEM_{2}:{0}\nPSU_API_{2}:{1}".format(OEM_info,API_info,id),timestamp=False)
+            CMM.save_data(MAIN_LOG,"PSU_API_{0}:{1}".format(id,API_info),timestamp=False)
             if OEM_info and API_info:
+                OEM_dict_info = {}
                 temp_list = OEM_info.split()
                 # Check PSU id
                 OEM_id = parse_id(temp_list)
+                OEM_dict_info["id"] = OEM_id
                 API_id = API_info.get("id")
                 if OEM_id != API_id:
                     is_fail = True
@@ -169,6 +231,7 @@ class CMMTest(unittest.TestCase,CMM):
                     CMM.show_message(fail_text,timestamp=False)
                 # Check PSU Present
                 OEM_Present_0,OEM_Present_1 = parse_Present(temp_list)
+                OEM_dict_info["psuPresent"] = OEM_Present_1
                 API_Present_0 = API_info.get("Present")
                 API_Present_1 = API_info.get("psuPresent")
                 if OEM_Present_0 != API_Present_0 or OEM_Present_1 != API_Present_1:
@@ -177,6 +240,32 @@ class CMMTest(unittest.TestCase,CMM):
                         (psu, OEM_Present_0, OEM_Present_1, API_Present_0, API_Present_1)
                     CMM.save_data(main_log, fail_text, timestamp=False)
                     CMM.show_message(fail_text, timestamp=False)
+                # Check PSU Iin
+                OEM_Iin = parse_Iin(temp_list)
+                OEM_dict_info["Iin"] = OEM_Iin
+                # Check PSU Iout
+                OEM_Iout = parse_Iout(temp_list)
+                OEM_dict_info["Iout"] = OEM_Iout
+                # Check PSU Pin
+                OEM_Pin = parse_Pin(temp_list)
+                OEM_dict_info["Pin"] = OEM_Pin
+                # Check PSU Pout
+                OEM_Pout = parse_Pout(temp_list)
+                OEM_dict_info["Pout"] = OEM_Pout
+                # Check PSU Vin
+                OEM_Vin = parse_Vin(temp_list)
+                OEM_dict_info["Vin"] = OEM_Vin
+                # Check PSU Vout
+                OEM_Vout = parse_Vout(temp_list)
+                OEM_dict_info["Vout"] = OEM_Vout
+                # Check PSU FanDuty
+                OEM_FanDuty = parse_FanDuty(temp_list)
+                OEM_dict_info["FanDuty"] = OEM_FanDuty
+                # Check PSU Temp
+                OEM_Temp1,OEM_Temp2 = parse_Temp(temp_list)
+                OEM_dict_info["Temp1"] = OEM_Temp1
+                OEM_dict_info["Temp2"] = OEM_Temp2
+                CMM.save_data(MAIN_LOG,"PSU_OEM_{0}:{1}".format(id,OEM_dict_info),timestamp=False)
             else:
                 CASE_PASS = False
                 return False
@@ -191,23 +280,19 @@ class CMMTest(unittest.TestCase,CMM):
                 CMM.save_data(main_log,temp_text,timestamp=False)
                 CMM.show_message(temp_text,timestamp=False)
 
-    # TODO: Set power via OEM command | Web API
-    def d_set_power_via_OEM(self):
-        global CASE_PASS
-        temp_text = "Set power via OEM command"
-        CMM.show_message(format_item(temp_text), color="green", timestamp=False)
-        CMM.save_data(main_log, temp_text, timestamp=False)
+    # TODO: Set power via OEM command
+    # def d_set_power_via_OEM(self):
+    #     global CASE_PASS
+    #     temp_text = "Set power via OEM command"
+    #     CMM.show_message(format_item(temp_text), color="green", timestamp=False)
+    #     CMM.save_data(main_log, temp_text, timestamp=False)
 
-    def f_set_power_via_API(self):
-        global CASE_PASS
-        temp_text = "Set power via Web API"
-        CMM.show_message(format_item(temp_text), color="green", timestamp=False)
-        CMM.save_data(main_log, temp_text, timestamp=False)
-
-
-
-
-
+    # TODO: Set power via Web API
+    # def f_set_power_via_API(self):
+    #     global CASE_PASS
+    #     temp_text = "Set power via Web API"
+    #     CMM.show_message(format_item(temp_text), color="green", timestamp=False)
+    #     CMM.save_data(main_log, temp_text, timestamp=False)
 
     def g_curl_logout(self):
         if LOG_FAIL:
