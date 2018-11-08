@@ -21,3 +21,5 @@ Log Server
     脚本中定义每30s检查日志一次，若日志超过1分钟未更新则重启socat
     Usage: python serial_log_update.py < log path >
     注意: 需要放置在后台执行，可以开启一个screen session来执行该刷新脚本
+    默认: 在开启监控时会新建serial_log_flush的session作为刷新使用
+

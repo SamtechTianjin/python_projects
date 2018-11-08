@@ -58,12 +58,13 @@ def exec_file_flush(filename, current, max_time=MAX_TIME):
         if end.returncode != 0:
             print "[{0}] Run FAIL !".format(end_cmd)
             print error
-        time.sleep(1)
-        start = subprocess.Popen(start_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        output,error = start.communicate()
-        if start.returncode != 0:
-            print "[{0}] Run FAIL !".format(start_cmd)
-            print error
+        else:   # 只有杀死进程才会重新创建新的session
+            time.sleep(0.2)
+            start = subprocess.Popen(start_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            output,error = start.communicate()
+            if start.returncode != 0:
+                print "[{0}] Run FAIL !".format(start_cmd)
+                print error
 
 def exec_directory_flush():
     os.chdir(LOG_DIR)

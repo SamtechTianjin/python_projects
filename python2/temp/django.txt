@@ -1,0 +1,60 @@
+D:\programs\python2.7.13\Scripts\django-admin.py
+
+python D:\programs\python2.7.13\Scripts\django-admin.py startproject
+
+python D:\programs\python2.7.13\Scripts\django-admin.py startapp
+
+
+python manage.py makemigrations		# 记录下你所有的关于modes.py的改动
+python manage.py migrate			# 将该改动作用到数据库文件
+python manage.py flush				# 清空数据库
+
+
+STATIC_URL = '/static/'
+STATICFILES_DIRS = (
+    os.path.join(os.path.join(BASE_DIR, 'static')),
+)
+{% load staticfiles %}#这句添加在html文件的最上面  
+
+# 然后在需要的地方按照这个格式进行调用，如：
+<img src="{% static "imgs/bg.jpg" %}"/>
+
+
+http://www.bitbug.net/		# 制作ico图像文件的网址
+<link rel="icon" href="{% static "images/title.ico" %}">
+
+
+默认配置下，Django 的模板系统会自动找到app下面的templates文件夹中的模板文件
+
+
+Django使用：ORM 的反向查找（related_name）
+class A(models.Model):
+    name= models.CharField('名称', max_length=32)
+
+class B(models.Model):
+    a= models.ForeignKey(A, verbose_name='A类',related_name = "test")
+    name = models.CharField('称呼', max_length=16)
+通过主表来查询子表
+A.objects.get(id=A_id).test.all().order_by('-created')
+通过子表来查询主表
+B.objects.filter(a=A_id).order_by('-created')
+
+
+# apache #
+注意apache用户的shell
+apache:x:48:48:Apache:/usr/share/httpd:/bin/bash
+若进行文件操作，注意文件的属性
+
+
+django下直接执行python脚本，需要先进行初始化操作
+查看manage.py
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Platform.settings")
+import django
+execute_from_command_line(sys.argv)
+	execute()
+		django.setup()
+
+# init #
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Platform.settings")
+import django
+django.setup()

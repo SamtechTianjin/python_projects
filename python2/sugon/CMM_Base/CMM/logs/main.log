@@ -1,0 +1,63 @@
+#==========================================================#
+#                         Main log                         #
+#==========================================================#
+2018-11-02 11:52:49	Test start...
+PSU_API_1:{'Vendor': '', 'Vout': '', 'Pin': '', 'Pout': '', 'Iout': '', 'Vin': '', 'isPSUOn': '', 'Temp2': '', 'Temp1': '', 'Fan1Speed': '', 'SN': '', 'psuPresent': 0, 'Model': '', 'Iin': '', 'FanDuty': '', 'id': 1, 'Present': 'N/A'}
+PSU_OEM_1:{'Vout': 0, 'Pin': 0, 'Pout': 0, 'Iout': 0, 'Vin': 0, 'Temp2': 0, 'Temp1': 0, 'psuPresent': 0, 'Iin': 0, 'FanDuty': 0, 'id': 1}
+PSU_API_2:{'Vendor': '', 'Vout': '', 'Pin': '', 'Pout': '', 'Iout': '', 'Vin': '', 'isPSUOn': '', 'Temp2': '', 'Temp1': '', 'Fan1Speed': '', 'SN': '', 'psuPresent': 0, 'Model': '', 'Iin': '', 'FanDuty': '', 'id': 2, 'Present': 'N/A'}
+PSU_OEM_2:{'Vout': 0, 'Pin': 0, 'Pout': 0, 'Iout': 0, 'Vin': 0, 'Temp2': 0, 'Temp1': 0, 'psuPresent': 0, 'Iin': 0, 'FanDuty': 0, 'id': 2}
+PSU_API_3:{'Vendor': '', 'Vout': '62', 'Pin': '131', 'Pout': '108', 'Iout': '26', 'Vin': '221', 'isPSUOn': 'ON', 'Temp2': 33, 'Temp1': 41, 'Fan1Speed': 21920, 'SN': '', 'psuPresent': 1, 'Model': '', 'Iin': '0', 'FanDuty': 1, 'id': 3, 'Present': 'Present'}
+PSU_OEM_3:{'Vout': 62, 'Pin': 131, 'Pout': 108, 'Iout': 26, 'Vin': 221, 'Temp2': 33, 'Temp1': 41, 'psuPresent': 1, 'Iin': 0, 'FanDuty': 1, 'id': 3}
+PSU_API_4:{'Vendor': '', 'Vout': '62', 'Pin': '125', 'Pout': '100', 'Iout': '25', 'Vin': '221', 'isPSUOn': 'ON', 'Temp2': 30, 'Temp1': 40, 'Fan1Speed': 21792, 'SN': '', 'psuPresent': 1, 'Model': '', 'Iin': '0', 'FanDuty': 1, 'id': 4, 'Present': 'Present'}
+PSU_OEM_4:{'Vout': 62, 'Pin': 125, 'Pout': 100, 'Iout': 25, 'Vin': 221, 'Temp2': 30, 'Temp1': 40, 'psuPresent': 1, 'Iin': 0, 'FanDuty': 1, 'id': 4}
+2018-11-02 11:52:55	PASS: Check Power Info
+2018-11-02 11:53:08	PASS: Check Switch Info
+FAN1_Duty30:[2836, 2836, 2406, 2406]
+FAN1_Duty40:[3842, 3842, 3370, 3370]
+FAN1_Duty50:[4858, 4858, 4274, 4274]
+FAN1_Duty60:[5855, 5855, 5112, 5112]
+FAN1_Duty70:[6858, 6858, 6002, 6002]
+FAN1_Duty80:[7879, 7879, 6861, 6861]
+FAN1_Duty90:[8829, 8829, 7627, 7627]
+FAN1_Duty100:[9918, 9918, 8628, 8628]
+FAN2_Duty30:[2862, 2862, 2217, 2217]
+FAN2_Duty40:[3857, 3857, 3410, 3410]
+FAN2_Duty50:[4873, 4873, 4273, 4273]
+FAN2_Duty60:[5870, 5870, 5108, 5108]
+FAN2_Duty70:[6881, 6881, 5950, 5950]
+FAN2_Duty80:[7893, 7893, 6880, 6880]
+FAN2_Duty90:[8890, 8890, 7631, 7631]
+FAN2_Duty100:[9959, 9959, 8580, 8580]
+FAN3_Duty30:[3865, 3865, 2861, 2861]
+FAN3_Duty40:[3900, 3900, 3426, 3426]
+FAN3_Duty50:[4910, 4910, 4356, 4356]
+FAN3_Duty60:[5915, 5915, 5162, 5162]
+FAN3_Duty70:[6871, 6871, 6054, 6054]
+FAN3_Duty80:[7923, 7923, 6919, 6919]
+FAN3_Duty90:[8908, 8908, 7705, 7705]
+FAN3_Duty100:[10005, 10005, 8692, 8692]
+FAN4_Duty30:[2901, 2901, 2443, 2443]
+FAN4_Duty40:[3917, 3917, 3421, 3421]
+FAN4_Duty50:[4886, 4886, 4320, 4320]
+FAN4_Duty60:[5927, 5927, 5180, 5180]
+FAN4_Duty70:[6884, 6884, 5995, 5995]
+FAN4_Duty80:[7938, 7938, 6933, 6933]
+FAN4_Duty90:[8933, 8933, 7668, 7668]
+FAN4_Duty100:[9978, 9978, 8663, 8663]
+FAN5_Duty30:[3779, 3779, 2714, 2714]
+FAN5_Duty40:[3871, 3871, 3360, 3360]
+FAN5_Duty50:[4878, 4878, 4256, 4256]
+FAN5_Duty60:[5885, 5885, 5094, 5094]
+FAN5_Duty70:[6863, 6863, 5967, 5967]
+FAN5_Duty80:[7889, 7889, 6873, 6873]
+FAN5_Duty90:[8878, 8878, 7603, 7603]
+FAN5_Duty100:[9984, 9984, 8571, 8571]
+2018-11-02 12:00:30	PASS: Check Fan Info
+2018-11-02 12:30:51	PASS: CMM Cold Reset
+INFO: Stress Time: 1800s
+INFO: Average Reset Time: 55s
+2018-11-02 12:30:57	Test finish.
+
+2018-11-02 13:57:05	total case: 4
+2018-11-02 13:57:05	pass case: 4
+2018-11-02 13:57:05	fail case: 0

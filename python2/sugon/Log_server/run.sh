@@ -45,17 +45,61 @@ elif [ "${log_type}" == "system" ]; then
 fi
 
 # Flush process
-flush_process=`screen -ls | grep serial_log_flush`
-if [ -z "${flush_process}" ]; then
-    flush_session="serial_log_flush"
-    flush_cmd="python ${current_path}/serial_log_update.py ${log_path}"
-    screen -dmS ${flush_session}
-    screen -S ${flush_session} -p 0 -X stuff "${flush_cmd}\n"
+count=3
+while [ $count -gt 0 ];do
+    flush_process=`screen -ls | grep SerialLogFlush`
+    if [ -z "${flush_process}" ]; then
+        flush_session="SerialLogFlush"
+        flush_cmd="python ${current_path}/serial_log_update.py ${log_path}"
+        screen -dmS ${flush_session}
+        if [ $? -eq 0 ];then
+            screen -S ${flush_session} -p 0 -X stuff "${flush_cmd}\n"
+            sleep 0.5
+            temp=`ps -ef | grep serial_log_update.py | grep -v grep`
+            if [ -n "$temp" ];then
+                break
+            else
+                screen -S ${flush_session} -X quit
+            fi
+        fi
+    fi
+    let count=$count-1
+    sleep 0.5
+done
+
+
+# Auto check process
+count=3
+while [ $count -gt 0 ];do
+    check_process=`screen -ls | grep AutoCheckSerialLog`
+    if [ -z "${check_process}" ]; then
+        check_session="AutoCheckSerialLog"
+        check_cmd="python ${current_path}/Auto_Collect_Serial_log.py ${log_path}"
+        screen -dmS ${check_session}
+        if [ $? -eq 0 ];then
+            screen -S ${check_session} -p 0 -X stuff "${check_cmd}\n"
+            sleep 0.5
+            temp=`ps -ef | grep Auto_Collect_Serial_log.py | grep -v grep`
+            if [ -n "$temp" ];then
+                break
+            else
+                screen -S ${check_session} -X quit
+            fi
+        fi
+    fi
+    let count=$count-1
+    sleep 0.5
+done
+
+
+# Monitor process
+monitor_process=`screen -ls | grep ${session_name}`
+if [ -z "${monitor_process}" ];then
+    cmd="bash ${script} ${IP} ${port} ${log_path}"
+    screen -dmS ${session_name}
+    if [ $? -eq 0 ];then
+        screen -S ${session_name} -p 0 -X stuff "${cmd}\n"
+    fi
 fi
 
-
-cmd="bash ${script} ${IP} ${port} ${log_path}"
-
-# Create screen session to run script
-screen -dmS ${session_name}
-screen -S ${session_name} -p 0 -X stuff "${cmd}\n"
+sleep 0.5
