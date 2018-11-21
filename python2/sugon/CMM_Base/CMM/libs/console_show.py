@@ -41,6 +41,7 @@ def show_title(message="Test",color="green"):
         print(line)
 
 def format_item(item):
+    item = item.strip("- ")
     item = " {0} ".format(item)
     return item.center(TITLE_LENGTH,"=")
 

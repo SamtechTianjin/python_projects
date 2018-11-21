@@ -27,7 +27,7 @@ PASSWORD = config.PASSWORD
 FAN_NUM = config.FAN_NUM
 
 # Global variable
-LOG_FAIL = False
+LOGIN_FAIL = False
 CSRFToken = ""
 GET_FAN_API = "/api/cmminfo/fans/"
 GET_FAN_OEM = "raw 0x3a 0x53"
@@ -118,7 +118,6 @@ def CheckFanDuty(id,Duty):
         return False,[""]*4
     return True,FanSpeed
 
-
 def parse_id(temp_list):
     try:
         id = int(temp_list[0],16) + 1
@@ -189,7 +188,7 @@ class CMMTest(unittest.TestCase,CMM):
 
     def b_curl_login(self):
         global CASE_PASS
-        global LOG_FAIL
+        global LOGIN_FAIL
         global CSRFToken
         CMM.show_message(format_item("Login Web"),color="green",timestamp=False)
         status, output = CMM.curl_login_logout(IP, flag="login", username=USERNAME, password=PASSWORD)
@@ -204,15 +203,16 @@ class CMMTest(unittest.TestCase,CMM):
             CMM.save_data(main_log, message)
             show_step_result("[curl] Login Web", flag="FAIL")
             MAIN_LOG_list.append("[curl] Login Web FAIL !")
-            LOG_FAIL = True
+            LOGIN_FAIL = True
 
     def c_Check_fan_info(self):
-        if LOG_FAIL:
+        if LOGIN_FAIL:
             return False
         global CASE_PASS
-        temp_text = "Check fan info"
+        temp_text = "Check FAN info"
         CMM.show_message(format_item(temp_text),color="green",timestamp=False)
         CMM.save_data(main_log,temp_text,timestamp=False)
+        id_list,Present_list,FanStatus_list,Duty_list = [],[],[],[]
         for id in range(1,int(FAN_NUM)+1):
             fan = "FAN{0}".format(id)
             is_fail = False
@@ -221,6 +221,9 @@ class CMMTest(unittest.TestCase,CMM):
             if OEM_info and API_info:
                 temp_list = OEM_info.split()
                 # Check FAN id
+                message = "- Check FAN id -"
+                if message not in id_list:
+                    id_list.append(message)
                 OEM_id = parse_id(temp_list)
                 API_id = API_info.get("id")
                 if OEM_id != API_id:
@@ -228,7 +231,12 @@ class CMMTest(unittest.TestCase,CMM):
                     fail_text = "[OEM] {0} id: {1}\n[API] {0} id: {2}".format(fan,OEM_id,API_id)
                     CMM.save_data(main_log,fail_text,timestamp=False)
                     CMM.show_message(fail_text,timestamp=False)
+                    id_list.append("[OEM] {0} id: {1}".format(fan,OEM_id))
+                    id_list.append("[API] {0} id: {1}".format(fan,API_id))
                 # Check FAN Present
+                message = "- Check FAN Present -"
+                if message not in Present_list:
+                    Present_list.append(message)
                 OEM_Present_0,OEM_Present_1 = parse_Present(temp_list)
                 API_Present_0 = API_info.get("Present")
                 API_Present_1 = API_info.get("FanPresent")
@@ -238,7 +246,12 @@ class CMMTest(unittest.TestCase,CMM):
                         (fan,OEM_Present_0,OEM_Present_1,API_Present_0,API_Present_1)
                     CMM.save_data(main_log, fail_text, timestamp=False)
                     CMM.show_message(fail_text, timestamp=False)
+                    Present_list.append("[OEM] {0} Present: {1}, FanPresent: {2}".format(fan,OEM_Present_0,OEM_Present_1))
+                    Present_list.append("[API] {0} Present: {1}, FanPresent: {2}".format(fan,API_Present_0,API_Present_1))
                 # Check FAN status
+                message = "- Check FAN FanStatus -"
+                if message not in FanStatus_list:
+                    FanStatus_list.append(message)
                 OEM_FanStatus = parse_FanStatus(temp_list)
                 API_FanStatus = API_info.get("FanStatus")
                 if OEM_FanStatus != API_FanStatus:
@@ -246,7 +259,12 @@ class CMMTest(unittest.TestCase,CMM):
                     fail_text = "[OEM] {0} FanStatus: {1}\n[API] {0} FanStatus: {2}".format(fan,OEM_FanStatus,API_FanStatus)
                     CMM.save_data(main_log,fail_text,timestamp=False)
                     CMM.show_message(fail_text,timestamp=False)
+                    FanStatus_list.append("[OEM] {0} FanStatus: {1}".format(fan,OEM_FanStatus))
+                    FanStatus_list.append("[API] {0} FanStatus: {1}".format(fan,API_FanStatus))
                 # Check FAN Duty
+                message = "- Check FAN Duty -"
+                if message not in Duty_list:
+                    Duty_list.append(message)
                 OEM_Duty = parse_Duty(temp_list)
                 API_Duty = API_info.get("Duty")
                 if OEM_Duty != API_Duty:
@@ -254,6 +272,8 @@ class CMMTest(unittest.TestCase,CMM):
                     fail_text = "[OEM] {0} Duty: {1}\n[API] {0} Duty: {2}".format(fan,OEM_Duty,API_Duty)
                     CMM.save_data(main_log,fail_text,timestamp=False)
                     CMM.show_message(fail_text,timestamp=False)
+                    Duty_list.append("[OEM] {0} Duty: {1}".format(fan,OEM_Duty))
+                    Duty_list.append("[API] {0} Duty: {1}".format(fan,API_Duty))
                 """
                 # Check FAN FanSpeed
                 OEM_FanSpeed1 = parse_FanSpeed(temp_list,index=1)
@@ -268,23 +288,27 @@ class CMMTest(unittest.TestCase,CMM):
                     CMM.show_message(fail_text,timestamp=False)
                 """
             else:
+                is_fail = True
+            if is_fail:
                 CASE_PASS = False
-            if is_fail or not CASE_PASS:
-                CASE_PASS = False
-                temp_text = "[{0}] Check fan info FAIL !".format(fan)
-                MAIN_LOG_list.append(temp_text)
+                temp_text = "[{0}] Check FAN info FAIL !".format(fan)
+                # MAIN_LOG_list.append(temp_text)
                 CMM.save_data(main_log,temp_text,timestamp=False)
-                show_step_result("[{0}] Check fan info".format(fan),flag="FAIL")
+                show_step_result("[{0}] Check FAN info".format(fan),flag="FAIL")
             else:
-                temp_text = "[{0}] Check fan info PASS.".format(fan)
+                temp_text = "[{0}] Check FAN info PASS.".format(fan)
                 CMM.save_data(main_log,temp_text,timestamp=False)
-                show_step_result("[{0}] Check fan info".format(fan),flag="PASS")
+                show_step_result("[{0}] Check FAN info".format(fan),flag="PASS")
+        for l in [id_list,Present_list,FanStatus_list,Duty_list]:
+            for item in l:
+                MAIN_LOG_list.append(item)
 
-    def d_set_fan_via_OEM(self):
+    def d_set_fan_duty_via_OEM(self):
         global CASE_PASS
-        temp_text = "Set fan via OEM command"
+        temp_text = "- Set FAN duty via OEM command -"
         CMM.show_message(format_item(temp_text), color="green", timestamp=False)
         CMM.save_data(main_log, temp_text, timestamp=False)
+        MAIN_LOG_list.append(temp_text)
         # Switched manual mode
         status, output = CMM.retry_run_cmd(MANUAL_MODE_CMD)
         if status != 0:
@@ -313,8 +337,10 @@ class CMMTest(unittest.TestCase,CMM):
                 if not duty_pass:
                     Duty_fail = True
         if Duty_fail:
+            CASE_PASS = False
             show_step_result("Set and check FAN Duty",flag="FAIL")
             CMM.save_data(main_log,"[FAIL] Set and check FAN Duty",timestamp=False)
+            MAIN_LOG_list.append("[FAIL] Set and check FAN Duty")
         else:
             show_step_result("Set and check FAN Duty",flag="PASS")
             CMM.save_data(main_log,"[PASS] Set and check FAN Duty",timestamp=False)
@@ -338,7 +364,7 @@ class CMMTest(unittest.TestCase,CMM):
     #     CMM.save_data(main_log, temp_text, timestamp=False)
 
     def g_curl_logout(self):
-        if LOG_FAIL:
+        if LOGIN_FAIL:
             return False
         CMM.show_message(format_item("Logout Web"),color="green",timestamp=False)
         status, output = CMM.curl_login_logout(IP, flag="logout", username=USERNAME, password=PASSWORD, csrf_token=CSRFToken)

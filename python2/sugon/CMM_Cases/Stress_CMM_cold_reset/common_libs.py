@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
 
-import os
+import os,sys
 import commands
 import datetime
 import time
@@ -10,8 +10,69 @@ import paramiko
 import shutil
 import json
 import subprocess
-from console_show import show_title
 
+TITLE_LENGTH = 64
+LINE_SPACING = 1
+
+""" 常用方法 """
+def unicode_convert(data, code="utf-8"):
+    if isinstance(data, list):
+        return [unicode_convert(item) for item in data]
+    elif isinstance(data, dict):
+        return {unicode_convert(key): unicode_convert(value) for key, value in data.items()}
+    elif isinstance(data, unicode):
+        return data.encode(encoding=code)
+    else:
+        return data
+
+def show_title(message="Test",color="green"):
+    # red|green|yellow|blue
+    if color.lower() == "red" or color.lower() == "r":
+        num = 31
+    elif color.lower() == "green" or color.lower() == "g":
+        num = 32
+    elif color.lower() == "yellow" or color.lower() == "y":
+        num = 33
+    elif color.lower() == "blue" or color.lower() == "b":
+        num = 34
+    elif color.lower() == "magenta" or color.lower() == "m":
+        num = 35
+    elif color.lower() == "cyan" or color.lower() == "c":
+        num = 36
+    else:
+        num = ""
+    def color_show(data,num=num):
+        return "\033[1;{0}m{1}\033[0m".format(num,data)
+    length = TITLE_LENGTH
+    line_spacing = LINE_SPACING
+    top = "#{0}#".format("="*(length-2))
+    bottom = top
+    middle_top = "#{0}#".format(" "*(length-2))
+    middle_bottom = middle_top
+    message = "#{0}#".format(str(message).center((length-2)," "))
+    lines = ["\n"*line_spacing,top,middle_top,message,middle_bottom,bottom,"\n"*line_spacing]
+    if num:
+        lines = map(color_show,lines)
+    for line in lines:
+        print(line)
+
+def format_item(item):
+    item = " {0} ".format(item)
+    return item.center(TITLE_LENGTH,"=")
+
+def show_step_result(text,flag):
+    item1 = "{0} {1} ".format(text, "-" * (TITLE_LENGTH - len(text) - 8))
+    sys.stdout.write(item1)
+    if flag.upper() == "PASS":
+        print("\033[1;32m[PASS]\033[0m\n")
+    elif flag.upper() == "FAIL":
+        print("\033[1;31m[FAIL]\033[0m\n")
+    elif flag.upper() == "WARN":
+        print("\033[1;33m[WARN]\033[0m\n")
+    else:
+        pass
+
+""" 常用类 """
 class LoginFail(Exception):
     def __init__(self, error):
         super(LoginFail, self).__init__(error)
@@ -28,12 +89,12 @@ class AutoTest(object):
         pass
 
     @classmethod
-    def retry_run_cmd(cls,cmd,count=5,interval=3):
+    def retry_run_cmd(cls,cmd,count=3,interval=3):
         status = 1
         output = "Default output"
         while count > 0:
             status,output = cls.run_cmd(cmd)
-            if status == 0 and not re.search(r'error:',output,re.IGNORECASE):
+            if status == 0:
                 break
             count -= 1
             time.sleep(interval)
@@ -324,21 +385,6 @@ class Remote(object):
             return False
 
     @staticmethod
-    def download_file(remote_path,local_path,ip,username,password,port=22):
-        status = True
-        try:
-            t = paramiko.Transport(ip, port)
-            t.connect(username=username, password=password)
-            sftp = paramiko.SFTPClient.from_transport(t)
-            sftp.get(remote_path, local_path)
-        except Exception as e:
-            print("[Exception download file] {0}".format(e))
-            status = False
-        else:
-            t.close()
-        return status
-
-    @staticmethod
     def ssh_run_cmd(cmd, ip, username, password, port=22, timeout=60):
         output, error, e = None, None, None
         paramiko.util.log_to_file("paramiko.log")
@@ -521,7 +567,6 @@ class CMM(AutoTest):
 
     @classmethod
     def save_step_result(cls,filename, text, flag):
-        TITLE_LENGTH = 64
         item = "{0} {1} ".format(text, "-" * (TITLE_LENGTH - len(text) - 8))
         if flag.upper() == "PASS":
             item += "[PASS]"
@@ -535,100 +580,9 @@ class CMM(AutoTest):
             f.write(item)
             f.write("\n")
 
-    @classmethod
-    def convert_to_decimal(cls,item):
-        try:
-            data = int(item,16)
-        except Exception as e:
-            data = "Unknown"
-        return data
-
-    @classmethod
-    def convert_to_decimal_multi(cls,items,prior="L"):
-        temp_list = []
-        for item in items:
-            temp = cls.convert_to_decimal(item)
-            if temp != "Unknown":
-                temp_list.append(temp)
-            else:
-                return False
-        if prior.upper() == "L":
-            pass
-        elif prior.upper() == "H":
-            temp_list.reverse()
-        else:
-            return False
-        returnvalue = 0
-        for index,value in enumerate(temp_list):
-            returnvalue += value*(256**index)
-        return returnvalue
-
-    @classmethod
-    def convert_to_IP(cls,items,vers=4):
-        ip_address = ""
-        if vers == 4:
-            if len(items) == 4:
-                for item in items:
-                    temp = cls.convert_to_decimal(item)
-                    if temp == "Unknown":
-                        continue
-                    if ip_address:
-                        ip_address += ".{0}".format(temp)
-                    else:
-                        ip_address += "{0}".format(temp)
-                return ip_address
-        elif vers == 6:
-            if len(items) == 16:
-                ip_address = "".join(items)
-                return ip_address
-        return "Unknown"
-
-    @classmethod
-    def hex2str(cls,items):
-        if isinstance(items,str):
-            items = items.split()
-        temp_str = ""
-        for item in items:
-            if item == "00":
-                break
-            temp_str += chr(int(item,16))
-        return temp_str
-
-    @classmethod
-    def compare_dict(cls,baseline,loopdata):
-        temp_list = []
-        for k in baseline:
-            v1 = baseline.get(k)
-            v2 = loopdata.get(k)
-            if v1 != v2:
-                for kk in v1:
-                    vv1 = v1.get(kk)
-                    vv2 = v2.get(kk)
-                    if vv1 != vv2:
-                        temp1 = "{0} {1}".format(k,kk)
-                        temp_list.append(temp1)
-        return temp_list
-
-
-
-
-""" 常用函数 """
-def unicode_convert(data, code="utf-8"):
-    if isinstance(data, list):
-        return [unicode_convert(item) for item in data]
-    elif isinstance(data, dict):
-        return {unicode_convert(key): unicode_convert(value) for key, value in data.items()}
-    elif isinstance(data, unicode):
-        return data.encode(encoding=code)
-    else:
-        return data
-
-
-
 
 
 if __name__ == '__main__':
     show_title("Hello world !",color="m")
     cmm = CMM()
     print(cmm.banner("Sam"))
-    # print(Remote.download_file("/bmc/Liuming/sd","sd","10.2.39.240","root","111111"))

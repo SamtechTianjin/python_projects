@@ -1,19 +1,21 @@
 #==========================================================#
 #                 Case: Check Switch Info                  #
 #==========================================================#
-2018-11-02 11:53:04	[curl] Login Web successfully.
-Check switch info
+2018-11-16 11:19:52	[curl] Login Web successfully.
+- Check switch info -
 Switch 1
 ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x5f 0x00 2>/dev/null
 returncode: 0
 00 01 02 53 48 42 44 00 00 00 00 00 00 00 00 00
- 00 00 00 11 20 0c 0a 00 00 04 ff ff ff 00 0a 00
+ 00 00 00 11 18 0c 0a 00 00 04 ff ff ff 00 0a 00
  00 fe
 Switch 1
-curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:hH3WRxjf" -d"{'id':1}" http://10.0.22.234/api/cmminfo/switches/ -b cookie 2>/dev/null
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:JueSwDXO" -d "{'id':1}" http://10.0.22.234/api/cmminfo/switches/ -b cookie 2>/dev/null
 returncode: 0
-{ "id": 1, "swPresent": 1, " Present": "Present", "Status": "Power On", "Vendor": "SHBD", "SwitchType": "Ethernet Switch", "Temperature": 32, "Pwr_consump": 12, "IP": "10.0.0.4", "Netmask": "255.255.255.0", "Gateway": "10.0.0.254" }
-[Switch1] Check switch info PASS.
+{ "id": 1, "swPresent": 1, "Present": "Present", "Status": "Power On", "Vendor": "SHBD", "SwitchType": "Ethernet Switch", "Temperature": 24, "Pwr_consump": 12, "IP": "10.0.0.4", "Netmask": "255.255.255.0", "Gateway": "10.0.0.254" }
+[OEM] Switch1 Status: PSU On
+[API] Switch1 Status: Power On
+- Check switch info -
 Switch 2
 ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x5f 0x01 2>/dev/null
 returncode: 0
@@ -21,8 +23,60 @@ returncode: 0
  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
  00 00
 Switch 2
-curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:hH3WRxjf" -d"{'id':2}" http://10.0.22.234/api/cmminfo/switches/ -b cookie 2>/dev/null
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:JueSwDXO" -d "{'id':2}" http://10.0.22.234/api/cmminfo/switches/ -b cookie 2>/dev/null
 returncode: 0
-{ "id": 2, "swPresent": 0, " Present": "N\/A", "Status": "", "Vendor": "", "SwitchType": "", "Temperature": "", "Pwr_consump": "", "IP": "", "Netmask": "", "Gateway": "" }
-[Switch2] Check switch info PASS.
-2018-11-02 11:53:07	[curl] Logout Web successfully.
+{ "id": 2, "swPresent": 0, "Present": "N\/A", "Status": "", "Vendor": "", "SwitchType": "", "Temperature": "", "Pwr_consump": "", "IP": "", "Netmask": "", "Gateway": "" }
+- Check switch info -
+- Set Switch ipv4 via OEM command -
+Switch 1
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:JueSwDXO" -d "{'id':1}" http://10.0.22.234/api/cmminfo/switches/ -b cookie 2>/dev/null
+returncode: 0
+{ "id": 1, "swPresent": 1, "Present": "Present", "Status": "Power On", "Vendor": "SHBD", "SwitchType": "Ethernet Switch", "Temperature": 24, "Pwr_consump": 12, "IP": "10.0.0.4", "Netmask": "255.255.255.0", "Gateway": "10.0.0.254" }
+[OEM] Set switch1 ipv4
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x5e 0x0 0x03 0xa 0x0 0x0 0x94 0xff 0xff 0xff 0x0 0xa 0x0 0x0 0xfe
+returncode: 0
+
+Switch 1
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:JueSwDXO" -d "{'id':1}" http://10.0.22.234/api/cmminfo/switches/ -b cookie 2>/dev/null
+returncode: 0
+{ "id": 1, "swPresent": 1, "Present": "Present", "Status": "Power On", "Vendor": "SHBD", "SwitchType": "Ethernet Switch", "Temperature": 24, "Pwr_consump": 11, "IP": "10.0.0.148", "Netmask": "255.255.255.0", "Gateway": "10.0.0.254" }
+[OEM] Set switch1 ipv4
+ipmitool -I lanplus -H 10.0.22.234 -U admin -P admin raw 0x3a 0x5e 0x0 0x03 0xa 0x0 0x0 0x4 0xff 0xff 0xff 0x0 0xa 0x0 0x0 0xfe
+returncode: 0
+
+Switch 1
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:JueSwDXO" -d "{'id':1}" http://10.0.22.234/api/cmminfo/switches/ -b cookie 2>/dev/null
+returncode: 0
+{ "id": 1, "swPresent": 1, "Present": "Present", "Status": "Power On", "Vendor": "SHBD", "SwitchType": "Ethernet Switch", "Temperature": 24, "Pwr_consump": 12, "IP": "10.0.0.4", "Netmask": "255.255.255.0", "Gateway": "10.0.0.254" }
+[OEM] Restore switch1 ipv4 ------------------------------ [PASS]
+Switch 2
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:JueSwDXO" -d "{'id':2}" http://10.0.22.234/api/cmminfo/switches/ -b cookie 2>/dev/null
+returncode: 0
+{ "id": 2, "swPresent": 0, "Present": "N\/A", "Status": "", "Vendor": "", "SwitchType": "", "Temperature": "", "Pwr_consump": "", "IP": "", "Netmask": "", "Gateway": "" }
+- Set Switch ipv4 via Web API -
+Switch 1
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:JueSwDXO" -d "{'id':1}" http://10.0.22.234/api/cmminfo/switches/ -b cookie 2>/dev/null
+returncode: 0
+{ "id": 1, "swPresent": 1, "Present": "Present", "Status": "Power On", "Vendor": "SHBD", "SwitchType": "Ethernet Switch", "Temperature": 24, "Pwr_consump": 12, "IP": "10.0.0.4", "Netmask": "255.255.255.0", "Gateway": "10.0.0.254" }
+[API] Set switch1 ipv4
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:JueSwDXO" -d "{'id':1,'cmdtype':3,'address':'10.0.0.182','netmask':'255.255.255.0','gateway':'10.0.0.254'}" http://10.0.22.234/api/cmminfo/Setswitchipv4 -b cookie 2>/dev/null
+returncode: 0
+{ "id": 1, "cmdtype": 3, "address": "10.0.0.182", "netmask": "255.255.255.0", "gateway": "10.0.0.254" }
+Switch 1
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:JueSwDXO" -d "{'id':1}" http://10.0.22.234/api/cmminfo/switches/ -b cookie 2>/dev/null
+returncode: 0
+{ "id": 1, "swPresent": 1, "Present": "Present", "Status": "Power On", "Vendor": "SHBD", "SwitchType": "Ethernet Switch", "Temperature": 24, "Pwr_consump": 11, "IP": "10.0.0.182", "Netmask": "255.255.255.0", "Gateway": "10.0.0.254" }
+[API] Set switch1 ipv4
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:JueSwDXO" -d "{'id':1,'cmdtype':3,'address':'10.0.0.4','netmask':'255.255.255.0','gateway':'10.0.0.254'}" http://10.0.22.234/api/cmminfo/Setswitchipv4 -b cookie 2>/dev/null
+returncode: 0
+{ "id": 1, "cmdtype": 3, "address": "10.0.0.4", "netmask": "255.255.255.0", "gateway": "10.0.0.254" }
+Switch 1
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:JueSwDXO" -d "{'id':1}" http://10.0.22.234/api/cmminfo/switches/ -b cookie 2>/dev/null
+returncode: 0
+{ "id": 1, "swPresent": 1, "Present": "Present", "Status": "Power On", "Vendor": "SHBD", "SwitchType": "Ethernet Switch", "Temperature": 24, "Pwr_consump": 12, "IP": "10.0.0.4", "Netmask": "255.255.255.0", "Gateway": "10.0.0.254" }
+[API] Restore switch1 ipv4 ------------------------------ [PASS]
+Switch 2
+curl -X POST -H "Content-Type:application/json" -H "X-CSRFTOKEN:JueSwDXO" -d "{'id':2}" http://10.0.22.234/api/cmminfo/switches/ -b cookie 2>/dev/null
+returncode: 0
+{ "id": 2, "swPresent": 0, "Present": "N\/A", "Status": "", "Vendor": "", "SwitchType": "", "Temperature": "", "Pwr_consump": "", "IP": "", "Netmask": "", "Gateway": "" }
+2018-11-16 11:20:37	[curl] Logout Web successfully.

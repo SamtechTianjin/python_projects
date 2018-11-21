@@ -151,7 +151,7 @@ class PDFCreator(object):
                     value = []
                     fail_dict[key] = value
                     total_dict[key] = value
-                elif re.search(r'INFO:',line):
+                elif re.search(r'^INFO:',line):
                     is_info = True
                     line = re.search(r'INFO:.*',line).group().split("INFO:")[-1].strip()
                 elif re.search(r'FAN\d+_Duty\d+:.*',line):
@@ -166,7 +166,9 @@ class PDFCreator(object):
                     key,value = line.split(":",1)
                     PSU_OEM_DICT[key] = eval(value)
                 else: pass
-                if is_info: value.append(line)
+                if is_info:
+                    value.append(line)
+                    is_info = False
                 line = f.readline().strip()
         CMM.save_data(MAIN_LOG,"total case: {0}".format(total_num))
         CMM.save_data(MAIN_LOG,"pass case: {0}".format(pass_num))
@@ -208,6 +210,8 @@ class PDFCreator(object):
                             self.can.showPage()
                             location = self.content_start
                             self.head(page="content")
+                        self.can.setFont(psfontname=self.info_font,size=self.content_font_size)
+                        self.can.setFillColor(aColor=colors.darkblue)
                         self.can.drawString(x=self.info_start,y=location,text="{0}".format(info))
                         location -= self.content_line_spacing
                 index += 1
