@@ -6,6 +6,7 @@ import unittest
 import time
 import json
 import re
+import random
 lis = re.split(r'[/\\]',os.path.abspath(__file__))
 path = os.sep.join(lis[0:lis.index("CMM")+1])
 sys.path.append(path)
@@ -29,10 +30,12 @@ PSU_NUM = config.PSU_NUM
 # Global variable
 LOGIN_FAIL = False
 CSRFToken = ""
-GET_PSU_API = "/api/cmminfo/psus/"
+GET_PSU_API = "/api/cmminfo/psus"
 GET_PSU_OEM = "raw 0x3a 0x51"
-SET_PSU_OEM = "raw 0x3a 0x50"
+SET_PSU_API = "raw 0x3a 0x50"
 IPMITOOL = "ipmitool -I lanplus -H {0} -U {1} -P {2}".format(IP,USERNAME,PASSWORD)
+
+Present_psu = []
 
 """
 API接口返回值:
@@ -62,7 +65,6 @@ def GetPSUInfoViaAPI(CSRFToken,id):
     status,output = CMM.retry_run_cmd(cmd)
     message = "{0}\n{1}\nreturncode: {2}\n{3}".format("PSU {0}".format(id),cmd,status,output)
     CMM.save_data(main_log,message,timestamp=False)
-
     if status != 0:
         temp = "[API] Get PSU{0} info FAIL !".format(id)
         MAIN_LOG_list.append(temp)
@@ -73,6 +75,7 @@ def GetPSUInfoViaAPI(CSRFToken,id):
         except Exception as e:
             temp = "[PSU{0}] {1}".format(id,e)
             CMM.show_message(temp,timestamp=False,color="red")
+            MAIN_LOG_list.append(temp)
         else:
             if PSU_info.get("error"):
                 temp = "[API] Get PSU{0} info FAIL !".format(id)
@@ -109,43 +112,50 @@ def parse_Present(temp_list):
 
 def parse_FanDuty(temp_list):
     try:
-        FanDuty = int(temp_list[65],16)
+        # FanDuty = int(temp_list[65],16)
+        FanDuty = int(temp_list[77],16)
     except:
         FanDuty = "Unknown"
     return FanDuty
 
 def parse_Iin(temp_list):
     try:
-        Iin = int(temp_list[64],16)
+        # Iin = int(temp_list[64],16)
+        Iin = int(temp_list[76],16)
     except:
         Iin = "Unknown"
     return Iin
 
 def parse_Iout(temp_list):
     try:
-        Iout = int(temp_list[63],16)
+        # Iout = int(temp_list[63],16)
+        Iout = int(temp_list[75],16)
     except:
         Iout = "Unknown"
     return Iout
 
 def parse_Vin(temp_list):
     try:
-        Vin = int(temp_list[62],16)
+        # Vin = int(temp_list[62],16)
+        Vin = int(temp_list[74],16)
     except:
         Vin = "Unknown"
     return Vin
 
 def parse_Vout(temp_list):
     try:
-        Vout = int(temp_list[61],16)
+        # Vout = int(temp_list[61],16)
+        Vout = int(temp_list[73],16)
     except:
         Vout = "Unknown"
     return Vout
 
 def parse_Pin(temp_list):
     try:
-        temp1 = int(temp_list[60],16)*256
-        temp2 = int(temp_list[59],16)
+        # temp1 = int(temp_list[60],16)*256
+        temp1 = int(temp_list[72],16)*256
+        # temp2 = int(temp_list[59],16)
+        temp2 = int(temp_list[71],16)
         Pin = temp1 + temp2
     except:
         Pin = "Unknown"
@@ -153,8 +163,10 @@ def parse_Pin(temp_list):
 
 def parse_Pout(temp_list):
     try:
-        temp1 = int(temp_list[58],16)*256
-        temp2 = int(temp_list[57],16)
+        # temp1 = int(temp_list[58],16)*256
+        temp1 = int(temp_list[70],16)*256
+        # temp2 = int(temp_list[57],16)
+        temp2 = int(temp_list[69],16)
         Pout = temp1 + temp2
     except:
         Pout = "Unknown"
@@ -162,8 +174,10 @@ def parse_Pout(temp_list):
 
 def parse_Temp(temp_list):
     try:
-        Temp1 = int(temp_list[53],16)
-        Temp2 = int(temp_list[54],16)
+        # Temp1 = int(temp_list[53],16)
+        Temp1 = int(temp_list[65],16)
+        # Temp2 = int(temp_list[54],16)
+        Temp2 = int(temp_list[66],16)
     except:
         Temp1 = "Unknown"
         Temp2 = "Unknown"
@@ -171,8 +185,10 @@ def parse_Temp(temp_list):
 
 def parse_Fan1Speed(temp_list):
     try:
-        temp1 = int(temp_list[56],16)*256
-        temp2 = int(temp_list[55],16)
+        # temp1 = int(temp_list[56],16)*256
+        temp1 = int(temp_list[68],16)*256
+        # temp2 = int(temp_list[55],16)
+        temp2 = int(temp_list[67],16)
         Fan1Speed = temp1 + temp2
     except:
         Fan1Speed = "Unknown"
@@ -181,7 +197,8 @@ def parse_Fan1Speed(temp_list):
 def parse_SN(temp_list):
     try:
         SN = ""
-        temp_list = temp_list[37:53]
+        # temp_list = temp_list[37:53]
+        temp_list = temp_list[45:65]
         for temp in temp_list:
             if temp == "00":
                 break
@@ -194,7 +211,8 @@ def parse_SN(temp_list):
 def parse_Model(temp_list):
     try:
         Model = ""
-        temp_list = temp_list[21:37]
+        # temp_list = temp_list[21:37]
+        temp_list = temp_list[25:45]
         for temp in temp_list:
             if temp == "00":
                 break
@@ -207,7 +225,8 @@ def parse_Model(temp_list):
 def parse_Vendor(temp_list):
     try:
         Vendor = ""
-        temp_list = temp_list[5:21]
+        # temp_list = temp_list[5:21]
+        temp_list = temp_list[5:25]
         for temp in temp_list:
             if temp == "00":
                 break
@@ -230,6 +249,156 @@ def parse_isPSUOn(temp_list):
         isPSUOn = "Unknown"
     return isPSUOn
 
+def set_psu_powerstate_via_API(psu_id):
+    # 执行命令后等待时间
+    waitTime = 60
+    is_fail = False
+    restapi = "/api/cmmstate/psus"
+    poweroff_cmd = "curl -X POST -H \"X-CSRFTOKEN:%s\" -H \"Content-Type:application/json\" -d \"{'id':%s,'controlcommand':0}\" http://%s%s -b cookie 2>/dev/null" %(CSRFToken,psu_id,IP,restapi)
+    poweron_cmd = "curl -X POST -H \"X-CSRFTOKEN:%s\" -H \"Content-Type:application/json\" -d \"{'id':%s,'controlcommand':1}\" http://%s%s -b cookie 2>/dev/null" %(CSRFToken,psu_id,IP,restapi)
+    initial_power = GetPSUInfoViaAPI(CSRFToken, psu_id).get("isPSUOn")
+    # 初始化电源状态为ON
+    if initial_power == "OFF":
+        status,output = CMM.retry_run_cmd(poweron_cmd)
+        message = "Init psu{0} power state\n{1}\nreturncode: {2}\n{3}".format(psu_id,poweron_cmd,status,output)
+        CMM.save_data(main_log, message, timestamp=False)
+        try:
+            json_data = json.loads(output)
+        except Exception as e:
+            is_fail = True
+            message = "[Exception] {0}".format(e)
+            CMM.show_message(message,timestamp=False,color="red")
+            CMM.save_data(main_log,message,timestamp=False)
+        else:
+            if json_data.get("error"):
+                is_fail = True
+                MAIN_LOG_list.append(output)
+                CMM.show_message(output,timestamp=False,color="red")
+        time.sleep(waitTime)
+    # 确认电源状态为ON 否则退出测试
+    initial_power = GetPSUInfoViaAPI(CSRFToken, psu_id).get("isPSUOn")
+    if initial_power == "ON":
+        # 首先设置电源状态为OFF
+        status, output = CMM.retry_run_cmd(poweroff_cmd)
+        message = "Set psu{0} power off\n{1}\nreturncode: {2}\n{3}".format(psu_id, poweroff_cmd, status, output)
+        CMM.save_data(main_log, message, timestamp=False)
+        try:
+            json_data = json.loads(output)
+        except Exception as e:
+            is_fail = True
+            message = "[Exception] {0}".format(e)
+            CMM.show_message(message, timestamp=False, color="red")
+            CMM.save_data(main_log, message, timestamp=False)
+        else:
+            if json_data.get("error"):
+                is_fail = True
+                MAIN_LOG_list.append(output)
+                CMM.show_message(output, timestamp=False, color="red")
+        time.sleep(waitTime)
+        current_power_API_1 = GetPSUInfoViaAPI(CSRFToken, psu_id).get("isPSUOn")
+        temp = GetPSUInfoViaOEM(psu_id)
+        current_power_OEM_1 = parse_isPSUOn(temp.split())
+        if current_power_API_1 != "OFF" or current_power_OEM_1 != "OFF":
+            is_fail = True
+            temp_text = "[PSU{0}] Expect power state: {1}".format(psu_id, "OFF")
+            CMM.show_message(temp_text, timestamp=False, color="red")
+            MAIN_LOG_list.append(temp_text)
+            temp_text = "[PSU{0}] Current power state: OEM {1}, API {2}".format(psu_id, current_power_OEM_1,current_power_API_1)
+            CMM.show_message(temp_text, timestamp=False, color="red")
+            MAIN_LOG_list.append(temp_text)
+        else:
+            # 然后设置电源状态为ON
+            status, output = CMM.retry_run_cmd(poweron_cmd)
+            message = "Set psu{0} power on\n{1}\nreturncode: {2}\n{3}".format(psu_id, poweron_cmd, status, output)
+            CMM.save_data(main_log, message, timestamp=False)
+            try:
+                json_data = json.loads(output)
+            except Exception as e:
+                is_fail = True
+                message = "[Exception] {0}".format(e)
+                CMM.show_message(message, timestamp=False, color="red")
+                CMM.save_data(main_log, message, timestamp=False)
+            else:
+                if json_data.get("error"):
+                    is_fail = True
+                    MAIN_LOG_list.append(output)
+                    CMM.show_message(output, timestamp=False, color="red")
+            time.sleep(waitTime)
+            current_power_API_2 = GetPSUInfoViaAPI(CSRFToken, psu_id).get("isPSUOn")
+            temp = GetPSUInfoViaOEM(psu_id)
+            current_power_OEM_2 = parse_isPSUOn(temp.split())
+            if current_power_API_2 != "ON" or current_power_OEM_2 != "ON":
+                is_fail = True
+                temp_text = "[PSU{0}] Expect power state: {1}".format(psu_id, "ON")
+                CMM.show_message(temp_text, timestamp=False, color="red")
+                MAIN_LOG_list.append(temp_text)
+                temp_text = "[PSU{0}] Current power state: OEM {1}, API {2}".format(psu_id, current_power_OEM_2,current_power_API_2)
+                CMM.show_message(temp_text, timestamp=False, color="red")
+                MAIN_LOG_list.append(temp_text)
+    else:
+        is_fail = True
+    return False if is_fail else True
+
+def set_psu_fanduty_via_API(psu_id):
+    # 执行命令后等待时间
+    waitTime = 60
+    is_fail = False
+    duty = random.randint(30,100)
+    restapi = "/api/cmmstate/psus"
+    set_cmd = "curl -X POST -H \"X-CSRFTOKEN:%s\" -H \"Content-Type:application/json\" -d \"{'id':%s,'controlcommand':2,'parameter':%s}\" http://%s%s -b cookie 2>/dev/null" %(CSRFToken,psu_id,duty,IP,restapi)
+    status,output = CMM.retry_run_cmd(set_cmd)
+    message = "Set psu{0} duty\n{1}\nreturncode: {2}\n{3}".format(psu_id,set_cmd,status,output)
+    CMM.save_data(main_log,message,timestamp=False)
+    try:
+        json_data = json.loads(output)
+    except Exception as e:
+        is_fail = True
+        message = "[Exception] {0}".format(e)
+        MAIN_LOG_list.append(message)
+        CMM.show_message(message,timestamp=False,color="red")
+        CMM.save_data(main_log,message,timestamp=False)
+    else:
+        if json_data.get("error"):
+            is_fail = True
+            MAIN_LOG_list.append(output)
+            CMM.show_message(output,timestamp=False,color="red")
+    time.sleep(waitTime)
+    current_duty_API = GetPSUInfoViaAPI(CSRFToken,psu_id).get("FanDuty")
+    temp = GetPSUInfoViaOEM(psu_id)
+    current_duty_OEM = parse_FanDuty(temp.split())
+    if current_duty_API != duty or current_duty_OEM != duty:
+        is_fail = True
+        temp_text = "[PSU{0}] Set fan duty: {1}".format(psu_id,duty)
+        CMM.show_message(temp_text,timestamp=False,color="red")
+        MAIN_LOG_list.append(temp_text)
+        temp_text = "[PSU{0}] Get fan duty: OEM {1}, API {2}".format(psu_id,current_duty_OEM,current_duty_API)
+        CMM.show_message(temp_text,timestamp=False,color="red")
+        MAIN_LOG_list.append(temp_text)
+    return False if is_fail else True
+
+def getAllPsus():
+    data = []
+    restapi = "/api/cmmpower/allpsus"
+    cmd = "curl -X GET -H \"X-CSRFTOKEN:%s\" http://%s%s -b cookie 2>/dev/null" %(CSRFToken,IP,restapi)
+    status,output = CMM.retry_run_cmd(cmd)
+    message = "Collect all psu pout\n{0}\nreturncode: {1}\n{2}".format(cmd,status,output)
+    CMM.save_data(main_log,message,timestamp=False)
+    if status == 0:
+        try:
+            json_data = json.loads(output)
+        except Exception as e:
+            message = "[Exception] {0}".format(e)
+            MAIN_LOG_list.append(message)
+            CMM.show_message(message,timestamp=False,color="red")
+            CMM.save_data(main_log,message,timestamp=False)
+        else:
+            if isinstance(json_data,dict) and json_data.get("error"):
+                MAIN_LOG_list.append("{0}".format(json_data))
+                CMM.show_message("{0}".format(json_data),timestamp=False,color="red")
+            else:
+                data = json_data
+    return data
+
 
 
 
@@ -250,25 +419,25 @@ class CMMTest(unittest.TestCase,CMM):
         global CASE_PASS
         global LOGIN_FAIL
         global CSRFToken
-        CMM.show_message(format_item("Login Web"),color="green",timestamp=False)
+        message = "Login Web"
+        CMM.show_message(format_item(message),color="green",timestamp=False)
         status, output = CMM.curl_login_logout(IP, flag="login", username=USERNAME, password=PASSWORD)
         if status == 0:
-            message = "[curl] Login Web successfully."
-            CMM.save_data(main_log, message)
-            show_step_result("[curl] Login Web", flag="PASS")
+            show_step_result(message, flag="PASS")
+            CMM.save_step_result(main_log,message,"PASS")
             CSRFToken = output.strip()
         else:
-            CASE_PASS = False
-            message = "[curl] Login Web FAIL !\n{0}".format(output)
-            CMM.save_data(main_log, message)
-            show_step_result("[curl] Login Web", flag="FAIL")
-            MAIN_LOG_list.append("[curl] Login Web FAIL !")
             LOGIN_FAIL = True
+            CASE_PASS = False
+            show_step_result(message,"FAIL")
+            CMM.save_step_result(main_log,message,"FAIL")
+            MAIN_LOG_list.append("{0} FAIL !".format(message))
 
     def c_check_psu_info(self):
         if LOGIN_FAIL:
             return False
         global CASE_PASS
+        global Present_psu
         temp_text = "Check PSU info"
         CMM.show_message(format_item(temp_text),color="green",timestamp=False)
         CMM.save_data(main_log,temp_text,timestamp=False)
@@ -278,6 +447,8 @@ class CMMTest(unittest.TestCase,CMM):
             is_fail = False
             OEM_info = GetPSUInfoViaOEM(id)
             API_info = GetPSUInfoViaAPI(CSRFToken,id)
+            if API_info.get("psuPresent") == 1:
+                Present_psu.append(id)
             CMM.save_data(MAIN_LOG,"PSU_API_{0}:{1}".format(id,API_info),timestamp=False)
             if OEM_info or API_info:
                 OEM_dict_info = {}
@@ -429,36 +600,122 @@ class CMMTest(unittest.TestCase,CMM):
             for item in l:
                 MAIN_LOG_list.append(item)
 
-    def d_check_PSU_parameter_selector(self):
-        pass
-
-    # TODO: Set PSU via OEM command
-    # def d_set_PSU_via_OEM(self):
-    #     global CASE_PASS
-    #     temp_text = "Set PSU via OEM command"
-    #     CMM.show_message(format_item(temp_text), color="green", timestamp=False)
-    #     CMM.save_data(main_log, temp_text, timestamp=False)
-
-    # TODO: Set PSU via Web API
-    # def f_set_PSU_via_API(self):
-    #     global CASE_PASS
-    #     temp_text = "Set PSU via Web API"
-    #     CMM.show_message(format_item(temp_text), color="green", timestamp=False)
-    #     CMM.save_data(main_log, temp_text, timestamp=False)
-
-    def g_curl_logout(self):
+    def d_check_all_psu_pout_via_API(self):
         if LOGIN_FAIL:
             return False
-        CMM.show_message(format_item("Logout Web"),color="green",timestamp=False)
+        global CASE_PASS
+        is_FAIL = False
+        temp_text = "- Check all psu pout via API -"
+        CMM.show_message(format_item(temp_text), color="green", timestamp=False)
+        CMM.save_data(main_log, temp_text, timestamp=False)
+        MAIN_LOG_list.append(temp_text)
+        message = temp_text.strip(" -")
+        json_data = getAllPsus()
+        if json_data:
+            if len(json_data) != PSU_NUM:
+                is_FAIL = True
+                MAIN_LOG_list.append("{0}".format(json_data))
+                CMM.show_message("{0}".format(json_data),timestamp=False,color="red")
+            else:
+                for psu_id in range(1,PSU_NUM+1):
+                    API_info = GetPSUInfoViaAPI(CSRFToken,psu_id)
+                    expect_pout = API_info.get("Pout")
+                    if not API_info:
+                        is_FAIL = True
+                    for item in json_data:
+                        get_id = item.get("id")
+                        if get_id == psu_id:
+                            get_pout = item.get("Pout")
+                            if get_id in Present_psu:
+                                temp_pout = abs(int(get_pout)-int(expect_pout))
+                                if temp_pout > int(expect_pout)/3:
+                                    is_FAIL = True
+                                    text = "[/cmminfo/psus] PSU{0} {1}".format(psu_id,expect_pout)
+                                    MAIN_LOG_list.append(text)
+                                    CMM.show_message(text,timestamp=False,color="red")
+                                    CMM.save_data(main_log,text,timestamp=False)
+                                    text = "[/cmmpower/allpsus] PSU{0} {1}".format(psu_id,get_pout)
+                                    MAIN_LOG_list.append(text)
+                                    CMM.show_message(text,timestamp=False,color="red")
+                                    CMM.save_data(main_log,text,timestamp=False)
+                            else:
+                                if get_pout != "":
+                                    is_FAIL = True
+                                    text = "[PSU{0}] {1}".format(psu_id,get_pout)
+                                    MAIN_LOG_list.append(text)
+                                    CMM.show_message(text,timestamp=False,color="red")
+                            break
+                    else:
+                        is_FAIL = True
+        else:
+            is_FAIL = True
+        if is_FAIL:
+            CASE_PASS = False
+            show_step_result(message, flag="FAIL")
+            CMM.save_step_result(main_log, message, flag="FAIL")
+        else:
+            show_step_result(message, flag="PASS")
+            CMM.save_step_result(main_log, message, flag="PASS")
+
+
+    # TODO: Set PSU via OEM command
+
+    def m_set_psu_power_state_via_API(self):
+        if LOGIN_FAIL:
+            return False
+        global CASE_PASS
+        temp_text = "- Set psu power state via API -"
+        CMM.show_message(format_item(temp_text), color="green", timestamp=False)
+        CMM.save_data(main_log, temp_text, timestamp=False)
+        MAIN_LOG_list.append(temp_text)
+        for psu_id in range(1, int(PSU_NUM) + 1):
+            if psu_id not in Present_psu:
+                continue
+            status = set_psu_powerstate_via_API(psu_id)
+            message = "[PSU{0}] {1}".format(psu_id,temp_text.strip(" -"))
+            if status:
+                show_step_result(message,flag="PASS")
+                CMM.save_step_result(main_log,message,flag="PASS")
+            else:
+                CASE_PASS = False
+                show_step_result(message,flag="FAIL")
+                CMM.save_step_result(main_log,message,flag="FAIL")
+            time.sleep(1)
+
+    def n_set_psu_fanduty_via_API(self):
+        if LOGIN_FAIL:
+            return False
+        global CASE_PASS
+        temp_text = "- Set psu fan duty via API -"
+        CMM.show_message(format_item(temp_text), color="green", timestamp=False)
+        CMM.save_data(main_log, temp_text, timestamp=False)
+        MAIN_LOG_list.append(temp_text)
+        for psu_id in range(1, int(PSU_NUM) + 1):
+            if psu_id not in Present_psu:
+                continue
+            status = set_psu_fanduty_via_API(psu_id)
+            message = "[PSU{0}] {1}".format(psu_id,temp_text.strip(" -"))
+            if status:
+                show_step_result(message,flag="PASS")
+                CMM.save_step_result(main_log,message,flag="PASS")
+            else:
+                CASE_PASS = False
+                show_step_result(message,flag="FAIL")
+                CMM.save_step_result(main_log,message,flag="FAIL")
+            time.sleep(1)
+
+    def y_curl_logout(self):
+        if LOGIN_FAIL:
+            return False
+        message = "Logout Web"
+        CMM.show_message(format_item(message),color="green",timestamp=False)
         status, output = CMM.curl_login_logout(IP, flag="logout", username=USERNAME, password=PASSWORD, csrf_token=CSRFToken)
         if status == 0:
-            message = "[curl] Logout Web successfully."
-            CMM.save_data(main_log, message)
-            show_step_result("[curl] Logout Web",flag="PASS")
+            show_step_result(message,"PASS")
+            CMM.save_step_result(main_log,message,"PASS")
         else:
-            message = "[curl] Logout Web FAIL !\n{0}".format(output)
-            CMM.save_data(main_log, message)
-            show_step_result("[curl] Logout Web",flag="FAIL")
+            show_step_result(message,"FAIL")
+            CMM.save_step_result(main_log,message,"FAIL")
 
     def z_finish(self):
         CMM.save_data(MAIN_LOG,"{0} {1}".format("PASS:" if CASE_PASS else "FAIL:",module_name.replace("_"," ")))

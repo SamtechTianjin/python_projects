@@ -10,7 +10,24 @@ lis = re.split(r'[/\\]',os.path.abspath(__file__))
 path = os.sep.join(lis[0:lis.index("CMM")+1])
 sys.path.append(path)
 from conf import common_config
-from conf.config import CMM_version
+
+
+"""
+获取CMM最新迭代版本CMM_version
+"""
+def collectCMMVersion():
+    vers = 0
+    for item in os.listdir(common_config.IMAGE_DIR):
+        if item.startswith("CMM"):
+            m = re.search(r'\d+',item)
+            if m:
+                try:
+                    temp_vers = int(m.group())
+                except: pass
+                else:
+                    if temp_vers >= vers:
+                        vers = temp_vers
+    return vers
 
 
 class MailSender(object):
@@ -60,6 +77,8 @@ class MailSender(object):
                                 fail_num = num
                         break
                 line = f.readline().strip()
+        vers = collectCMMVersion()
+        CMM_version = "CMMSprint{0}".format(vers) if vers else "Unknown"
         self.CONTENT = common_config.EMAIL_CONTENT.format(date,total_num,pass_num,fail_num,CMM_version)
 
     def send(self):

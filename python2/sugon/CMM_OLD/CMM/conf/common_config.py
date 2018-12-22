@@ -14,7 +14,7 @@ CASE_DIR = os.path.join(MAIN_DIR, "cases")
 TMP_DIR = os.path.join(MAIN_DIR, "tmp")
 MAIN_LOG = os.path.join(LOG_DIR, "main.log")
 PDF_RESULT = os.path.join(LOG_DIR, "CMM_Report_{0}.pdf".format(datetime.datetime.now().strftime("%Y-%m-%d")))
-CASE_CONFIG = os.path.join(CONF_DIR, "cases.txt")
+CASE_CONFIG = os.path.join(CONF_DIR, "cases.cfg")
 # 定义console显示的一些参数
 CONSOLE_INDENT = 10
 TITLE_LENGTH = 64

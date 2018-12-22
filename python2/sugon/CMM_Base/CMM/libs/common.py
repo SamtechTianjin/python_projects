@@ -28,6 +28,53 @@ class AutoTest(object):
         pass
 
     @classmethod
+    def deleteFile(cls,path,startWith=None,endWith=None):
+        oldPath = os.getcwd()
+        try:
+            os.chdir(path)
+        except Exception as e:
+            print(e)
+            return False
+        for name in os.listdir(path):
+            isDelete = False
+            if startWith and endWith:
+                if name.startswith(startWith) and name.endswith(endWith):
+                    isDelete = True
+            elif startWith:
+                if name.startswith(startWith):
+                    isDelete = True
+            elif endWith:
+                if name.endswith(endWith):
+                    isDelete = True
+            else:
+                isDelete = True
+            if isDelete:
+                if os.path.isfile(name):
+                    os.remove(name)
+                elif os.path.isdir(name):
+                    shutil.rmtree(name)
+        os.chdir(oldPath)
+        return True
+
+    @classmethod
+    def modify_file_content(cls,filename,old_data,new_data):
+        file_data = ""
+        is_fail = False
+        try:
+            with open(filename,"r") as temp_file:
+                for line in temp_file:
+                    if old_data in line:
+                        line = line.replace(old_data,new_data)
+                    file_data += line
+            with open(filename,"w") as temp_file:
+                temp_file.write(file_data)
+        except Exception as e:
+            temp_text = "[Exception] {0}".format(e)
+            cls.show_message(temp_text,timestamp=False,color="red")
+            is_fail = True
+        return False if is_fail else True
+
+    @classmethod
     def retry_run_cmd(cls,cmd,count=5,interval=3):
         status = 1
         output = "Default output"
@@ -486,7 +533,7 @@ class CMM(AutoTest):
         return "\n".join([top,message,bottom])
 
     @classmethod
-    def curl_login_logout(cls,ip,flag="login",username="admin",password="admin",csrf_token=None):
+    def curl_login_logout(cls,ip,flag="login",username="admin",password="admin",csrf_token=None,retry_count=2):
         restAPI = "/api/session"
         restcode = 0
         message = None
@@ -501,19 +548,25 @@ class CMM(AutoTest):
         else:
             return 1,"The flag should be login|logout !"
         try:
-            status,output = cls.retry_run_cmd(cmd)
-            if status == 0:
-                ret_dict = json.loads(output.strip())
-                if ret_dict.get("ok") == 0:
-                    if flag == "login":
-                        csrf_token = ret_dict.get("CSRFToken")
-                else:
-                    raise LoginFail(ret_dict)
+            """ 刷新固件后第一次登录网页一定会出现500错误 因此增加retry 后续等待解决???  """
+            while retry_count > 0:
+                status,output = cls.retry_run_cmd(cmd)
+                if status == 0:
+                    try:
+                        ret_dict = json.loads(output.strip())
+                    except: pass
+                    else:
+                        if ret_dict.get("ok") == 0:
+                            if flag == "login":
+                                csrf_token = ret_dict.get("CSRFToken")
+                            break
+                retry_count -= 1
+                time.sleep(3)
             else:
-                raise LoginFail("[{0}] The return code is not 0 !".format(flag))
+                raise LoginFail("FAIL") if flag == "login" else LogoutFail("FAIL")
         except Exception as e:
             restcode = 1
-            message = "[{0}] {1}".format(flag,e)
+            message = "{0} {1}".format(flag,e)
         else:
             message = csrf_token if flag == "login" else "Logout successfully."
         finally:
@@ -612,6 +665,7 @@ class CMM(AutoTest):
 
 
 
+
 """ 常用函数 """
 def unicode_convert(data, code="utf-8"):
     if isinstance(data, list):
@@ -631,4 +685,3 @@ if __name__ == '__main__':
     show_title("Hello world !",color="m")
     cmm = CMM()
     print(cmm.banner("Sam"))
-    # print(Remote.download_file("/bmc/Liuming/sd","sd","10.2.39.240","root","111111"))

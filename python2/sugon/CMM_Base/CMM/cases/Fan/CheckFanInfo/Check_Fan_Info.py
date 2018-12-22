@@ -190,20 +190,19 @@ class CMMTest(unittest.TestCase,CMM):
         global CASE_PASS
         global LOGIN_FAIL
         global CSRFToken
-        CMM.show_message(format_item("Login Web"),color="green",timestamp=False)
+        message = "Login Web"
+        CMM.show_message(format_item(message),color="green",timestamp=False)
         status, output = CMM.curl_login_logout(IP, flag="login", username=USERNAME, password=PASSWORD)
         if status == 0:
-            message = "[curl] Login Web successfully."
-            CMM.save_data(main_log, message)
-            show_step_result("[curl] Login Web", flag="PASS")
+            show_step_result(message, flag="PASS")
+            CMM.save_step_result(main_log,message,"PASS")
             CSRFToken = output.strip()
         else:
-            CASE_PASS = False
-            message = "[curl] Login Web FAIL !\n{0}".format(output)
-            CMM.save_data(main_log, message)
-            show_step_result("[curl] Login Web", flag="FAIL")
-            MAIN_LOG_list.append("[curl] Login Web FAIL !")
             LOGIN_FAIL = True
+            CASE_PASS = False
+            show_step_result(message,"FAIL")
+            CMM.save_step_result(main_log,message,"FAIL")
+            MAIN_LOG_list.append("{0} FAIL !".format(message))
 
     def c_Check_fan_info(self):
         if LOGIN_FAIL:
@@ -363,19 +362,18 @@ class CMMTest(unittest.TestCase,CMM):
     #     CMM.show_message(format_item(temp_text), color="green", timestamp=False)
     #     CMM.save_data(main_log, temp_text, timestamp=False)
 
-    def g_curl_logout(self):
+    def y_curl_logout(self):
         if LOGIN_FAIL:
             return False
-        CMM.show_message(format_item("Logout Web"),color="green",timestamp=False)
+        message = "Logout Web"
+        CMM.show_message(format_item(message),color="green",timestamp=False)
         status, output = CMM.curl_login_logout(IP, flag="logout", username=USERNAME, password=PASSWORD, csrf_token=CSRFToken)
         if status == 0:
-            message = "[curl] Logout Web successfully."
-            CMM.save_data(main_log, message)
-            show_step_result("[curl] Logout Web", flag="PASS")
+            show_step_result(message,"PASS")
+            CMM.save_step_result(main_log,message,"PASS")
         else:
-            message = "[curl] Logout Web FAIL !\n{0}".format(output)
-            CMM.save_data(main_log, message)
-            show_step_result("[curl] Logout Web", flag="FAIL")
+            show_step_result(message,"FAIL")
+            CMM.save_step_result(main_log,message,"FAIL")
 
     def z_finish(self):
         CMM.save_data(MAIN_LOG,"{0} {1}".format("PASS:" if CASE_PASS else "FAIL:",module_name.replace("_"," ")))

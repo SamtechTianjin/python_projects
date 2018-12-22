@@ -1,10 +1,12 @@
 # -*- coding:utf-8 -*-
 
+import os
 import shutil
 import re
 import importlib
 import collections
 import unittest
+import xmlrunner
 from conf.common_config import *
 from libs.config_handler import cases_from_config
 from libs.common import CMM
@@ -12,14 +14,11 @@ from libs.log_handler import PDFCreator
 from libs.email_handler import MailSender
 
 """
-cases目录：测试脚本
-conf 目录：配置文件
-libs 目录：测试调用模块
-logs 目录：所有测试日志
-tmp  目录：测试中临时使用的文件
+目录: cases, libs, conf, images, logs, report, tmp
 执行 python Main.py
 """
 
+CURRENT_PATH = os.path.abspath(os.path.dirname(__file__))
 TMP_DICT = dict()
 CLASSES = collections.OrderedDict()
 
@@ -77,7 +76,7 @@ def parse_case():
         if not os.path.exists(case_dir):
             continue
         find_all_case_class(case_dir)
-    # 按照case.txt的顺序生成CLASSES
+    # 按照case.cfg的顺序生成CLASSES
     for case in cases:
         if TMP_DICT.has_key(case):
             CLASSES[case] = TMP_DICT[case]
@@ -86,6 +85,11 @@ def init():
     if os.path.exists(LOG_DIR):
         shutil.rmtree(LOG_DIR)
     os.makedirs(LOG_DIR)
+    for item in ["images","report","tmp"]:
+        temp = os.path.join(CURRENT_PATH,item)
+        if os.path.exists(temp):
+            shutil.rmtree(temp)
+        os.makedirs(temp)
     cmm = CMM()
     cmm.save_data(MAIN_LOG,cmm.banner("Main log"),flag="w",timestamp=False)
     cmm.save_data(MAIN_LOG,"Test start...")
@@ -101,7 +105,10 @@ if __name__ == '__main__':
         for value in CLASSES.itervalues():
             case_class,func_list = import_module(value["class"], value["module"])
             suite.addTests(map(case_class, func_list))
-        runner = unittest.TextTestRunner(verbosity=0)
+        if XML_REPORT:
+            runner = xmlrunner.XMLTestRunner(output="report")   # report目录
+        else:
+            runner = unittest.TextTestRunner(verbosity=0)
         runner.run(suite)
         CMM.save_data(MAIN_LOG,"Test finish.")
         PDFCreator.finish_PDF()

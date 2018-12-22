@@ -10,17 +10,38 @@ from common import CMM
 lis = re.split(r'[/\\]',os.path.abspath(__file__))
 path = os.sep.join(lis[0:lis.index("CMM")+1])
 sys.path.append(path)
-from conf.common_config import LIB_DIR,MAIN_LOG,PDF_RESULT
-from conf.config import CMM_version
+from conf.common_config import LIB_DIR,MAIN_LOG,PDF_RESULT,IMAGE_DIR
+
 
 """
-处理logs/main.log的测试结果，生成PDF测试报告
+处理logs/main.log的测试结果 >>> 生成PDF测试报告
 """
 
 FAN_LIST = []
 PSU_API_DICT = {}
 PSU_OEM_DICT = {}
 TABLE_NUM = 1
+FRU_LIST = []
+NETWORK_LIST = []
+NODE_ASSET_DICT = {}
+
+"""
+获取CMM最新迭代版本CMM_version
+"""
+def collectCMMVersion():
+    vers = 0
+    for item in os.listdir(IMAGE_DIR):
+        if item.startswith("CMM"):
+            m = re.search(r'\d+',item)
+            if m:
+                try:
+                    temp_vers = int(m.group())
+                except: pass
+                else:
+                    if temp_vers >= vers:
+                        vers = temp_vers
+    return vers
+
 
 
 class PDFCreator(object):
@@ -48,6 +69,7 @@ class PDFCreator(object):
     page_number_font_size = 10                      # 页码字体大小
     head_image_x = line_start                       # 内容页顶部logo x轴位置
     head_image_y = content_head_line+0.01*inch      # 内容页顶部logo y轴位置
+    INFO_MAX_LENGTH = 72
 
     def __init__(self,filename):
         self.can = Canvas(filename=filename)
@@ -63,7 +85,6 @@ class PDFCreator(object):
             self.can.drawImage(image=self.imgae,x=100,y=500,width=400,height=200)
             self.can.setFont(psfontname=self.title_font,size=16)
             length = 8
-            date_info,version_info = "",""
             with open(MAIN_LOG,"r") as f:
                 line = f.readline().strip()
                 while True:
@@ -71,7 +92,8 @@ class PDFCreator(object):
                         date_info = line.split()[0]
                         break
                     line = f.readline().strip()
-            version_info = CMM_version
+            vers = collectCMMVersion()
+            version_info = "CMMSprint{0}".format(vers) if vers else "Unknown"
             date_info = "{0}{1}: {2}".format("Date"," "*(length-len("Date")),date_info)
             version_info = "{0}{1}: {2}".format("Version"," "*(length-len("Version")),version_info)
             self.can.drawString(x=4.5*inch,y=4*inch,text=date_info)
@@ -120,7 +142,11 @@ class PDFCreator(object):
 
     def parse_log(self):
         global FAN_LIST
-        global PSU_LIST
+        global PSU_API_DICT
+        global PSU_OEM_DICT
+        global FRU_LIST
+        global NETWORK_LIST
+        global NODE_ASSET_DICT
         total_dict = collections.OrderedDict()
         pass_dict = collections.OrderedDict()
         fail_dict = collections.OrderedDict()
@@ -165,6 +191,18 @@ class PDFCreator(object):
                     line = re.search(r'PSU.*',line).group().strip()
                     key,value = line.split(":",1)
                     PSU_OEM_DICT[key] = eval(value)
+                elif re.search(r'NETWORK_INFO:.*',line):
+                    line = re.search(r'NETWORK_INFO:.*',line).group().strip()
+                    key,value = line.split(":",1)
+                    NETWORK_LIST = eval(value)
+                elif re.search(r'FRU_INFO:.*',line):
+                    line = re.search(r'FRU_INFO:.*',line).group().strip()
+                    key,value = line.split(":",1)
+                    FRU_LIST = eval(value)
+                elif re.search(r'^Node_Asset_INFO:',line):
+                    line = re.search(r'Node_Asset_INFO:.*',line).group().strip()
+                    key,value = line.split(":",1)
+                    NODE_ASSET_DICT = eval(value)
                 else: pass
                 if is_info:
                     value.append(line)
@@ -211,11 +249,227 @@ class PDFCreator(object):
                             location = self.content_start
                             self.head(page="content")
                         self.can.setFont(psfontname=self.info_font,size=self.content_font_size)
-                        self.can.setFillColor(aColor=colors.darkblue)
-                        self.can.drawString(x=self.info_start,y=location,text="{0}".format(info))
-                        location -= self.content_line_spacing
+                        if info.startswith("-"):
+                            temp_color = colors.darkblue
+                            if not info.endswith("-"):
+                                info = info.strip(" -")
+                        else:
+                            temp_color = aColor=colors.red
+                        self.can.setFillColor(aColor=temp_color)
+                        """ 考虑报告每行的最大长度为 INFO_MAX_LENGTH，自适应换行 """
+                        div,mod = divmod(len(info),self.INFO_MAX_LENGTH)
+                        temp_value = div if mod == 0 else div+1
+                        start,end = 0,self.INFO_MAX_LENGTH
+                        for i in range(temp_value):
+                            text = info[start:end]
+                            start += self.INFO_MAX_LENGTH
+                            end += self.INFO_MAX_LENGTH
+                            self.can.drawString(x=self.info_start, y=location, text="{0}".format(text))
+                            location -= self.content_line_spacing
+                            if location <= self.content_end:
+                                self.can.showPage()
+                                location = self.content_start
+                                self.head(page="content")
+                                self.can.setFont(psfontname=self.info_font, size=self.content_font_size)
+                                self.can.setFillColor(aColor=temp_color)
                 index += 1
             self.can.showPage()
+        elif page == "FRU":
+            if not FRU_LIST:
+                return False
+            location = self.content_start
+            self.can.setFont(psfontname=self.title_font,size=14)
+            self.can.setFillColor(aColor=colors.darkblue)
+            self.can.drawString(x=self.line_start,y=location,text="[CMM FRU Information]")
+            table_location = location - 0.5*inch
+            column_width_a = 2.5 * inch
+            column_width_b = 3.5 * inch
+            line_width = column_width_a + column_width_b
+            row_height = 0.2 * inch
+            column_start = self.line_start + (6.5 * inch - line_width) / 2
+            content_a_start = column_start + 0.1 * inch
+            content_b_start = column_start + column_width_a + 0.1 * inch
+            self.can.setFont(psfontname=self.title_font, size=8)
+            for fru_dict in FRU_LIST:
+                title_list = fru_dict.keys()
+                R_block_start = table_location
+                R_start = R_block_start
+                for title in title_list:
+                    temp_dict = fru_dict.get(title)
+                    temp_key_list = temp_dict.keys()
+                    global temp_length
+                    temp_length = len(temp_dict)
+                    for R_index in range(temp_length+1):
+                        if R_index == 0:
+                            C_start = column_start
+                            self.can.setFillColor(aColor=colors.lightgrey)
+                            self.can.rect(x=C_start, y=R_start, width=line_width, height=row_height, fill=1)
+                            self.can.setFillColor(aColor=colors.black)
+                            text_start = content_a_start
+                            self.can.drawString(x=text_start, y=R_start + 0.06 * inch,text="{0}".format(title))
+                        else:
+                            C_start = column_start
+                            self.can.rect(x=C_start, y=R_start, width=column_width_a, height=row_height, fill=0)
+                            C_start += column_width_a
+                            self.can.rect(x=C_start, y=R_start, width=column_width_b, height=row_height, fill=0)
+                            self.can.setFillColor(aColor=colors.darkblue)
+                            text_start = content_a_start
+                            temp_text_1 = temp_key_list[R_index-1]
+                            self.can.drawString(x=text_start, y=R_start + 0.06 * inch, text=str(temp_text_1))
+                            self.can.setFillColor(aColor=colors.black)
+                            text_start = content_b_start
+                            temp_text_2 = temp_dict.get(temp_text_1)
+                            self.can.drawString(x=text_start, y=R_start + 0.06 * inch, text=str(temp_text_2))
+                        R_start -= row_height
+                R_block_start -= (temp_length+1)*row_height
+                self.can.showPage()
+        elif page == "NODE_ASSET":
+            if not NODE_ASSET_DICT:
+                return False
+            """
+            # CPU INFO
+            {
+                "SocketRiserType": "4+4+4+4", 
+                "nodeid": 4, 
+                "cpuPresent": 1, 
+                "UPIWidth": "Q3Q2Q1Q0/Q3Q2Q1Q0/Q3Q2Q1Q0", 
+                "BrandName": "Intel(R) Xeon(R) Platinum 8276L CPU @ 2.20GHz", 
+                "Location": "CPU0", 
+                "cpuid": 1, 
+                "Present": "Present", 
+                "UPIFreq": "10.4GT/s"
+            }
+            # PCIE INFO
+            {
+                "pcieid": 1, 
+                "Vendor": "LSI Logic", 
+                "pciePresent": 1, 
+                "BrandName": "SH08-L3008 8i SAS HBA", 
+                "nodeid": 2, 
+                "NegoLinkWidth": "x8", 
+                "Location": "Riser1_Slot", 
+                "CPUNo": "CPU0", 
+                "Class": "SAS Card", 
+                "Present": "Present", 
+                "CurSpeed": "8.0GT/s"
+            }
+            """
+            item_keys = ["CPU","PCIE"]
+            cpu_keys = ["cpuid","BrandName","Location","UPIWidth","UPIFreq","SocketRiserType"]
+            pcie_keys = ["pcieid","BrandName","Vendor","Class","CPUNo","Location","NegoLinkWidth","CurSpeed"]
+            nodeNames = sorted(NODE_ASSET_DICT.keys())
+            for nodeName in nodeNames:
+                nodeInfo = NODE_ASSET_DICT.get(nodeName)
+                if nodeInfo.get("Present") != "Y":
+                    continue
+                self.head(page="content")
+                location = self.content_start
+                self.can.setFont(psfontname=self.title_font, size=14)
+                self.can.setFillColor(aColor=colors.darkblue)
+                self.can.drawString(x=self.line_start, y=location, text="[{0} Asset Information]".format(nodeName))
+                table_location = location - 0.5 * inch
+                column_width_a = 2 * inch
+                column_width_b = 4 * inch
+                line_width = column_width_a + column_width_b
+                row_height = 0.2 * inch
+                column_start = self.line_start + (6.5 * inch - line_width) / 2
+                content_a_start = column_start + 0.1 * inch
+                content_b_start = column_start + column_width_a + 0.1 * inch
+                self.can.setFont(psfontname=self.title_font, size=8)
+                temp_keys = []
+                R_start = table_location
+                for item_key in item_keys:
+                    if item_key == "CPU":
+                        temp_keys = cpu_keys
+                    elif item_key == "PCIE":
+                        temp_keys = pcie_keys
+                    if temp_keys:
+                        temp_length = len(temp_keys)
+                        temp_list = nodeInfo.get(item_key)
+                        num = len(temp_list)
+                        for index,temp_dict in enumerate(temp_list):
+                            if index == 0:
+                                C_start = column_start
+                                self.can.setFillColor(aColor=colors.lightgrey)
+                                self.can.rect(x=C_start, y=R_start, width=line_width, height=row_height, fill=1)
+                                self.can.setFillColor(aColor=colors.black)
+                                text_start = content_a_start
+                                self.can.drawString(x=text_start, y=R_start + 0.06 * inch, text="{0} Asset Info".format(item_key))
+                                R_start -= row_height
+                            for R_index in range(temp_length):
+                                k = temp_keys[R_index]
+                                v = temp_dict.get(k)
+                                C_start = column_start
+                                self.can.rect(x=C_start, y=R_start, width=column_width_a, height=row_height, fill=0)
+                                C_start += column_width_a
+                                self.can.rect(x=C_start, y=R_start, width=column_width_b, height=row_height, fill=0)
+                                self.can.setFillColor(aColor=colors.darkblue)
+                                text_start = content_a_start
+                                self.can.drawString(x=text_start, y=R_start + 0.06 * inch, text=str(k))
+                                self.can.setFillColor(aColor=colors.black)
+                                text_start = content_b_start
+                                self.can.drawString(x=text_start, y=R_start + 0.06 * inch, text=str(v))
+                                R_start -= row_height
+                                if R_start <= self.content_end:
+                                    self.can.showPage()
+                                    self.head(page="content")
+                                    self.can.setFont(psfontname=self.title_font, size=8)
+                                    R_start = table_location
+                self.can.showPage()
+        elif page == "NETWORK":
+            if not NETWORK_LIST:
+                return False
+            location = self.content_start
+            self.can.setFont(psfontname=self.title_font,size=14)
+            self.can.setFillColor(aColor=colors.darkblue)
+            self.can.drawString(x=self.line_start,y=location,text="[CMM Network Information]")
+            table_location = location - 0.5*inch
+            column_width_a = 2 * inch
+            column_width_b = 4 * inch
+            line_width = column_width_a + column_width_b
+            row_height = 0.3 * inch
+            column_start = self.line_start + (6.5 * inch - line_width) / 2
+            content_a_start = column_start + 0.1 * inch
+            content_b_start = column_start + column_width_a + 0.1 * inch
+            self.can.setFont(psfontname=self.title_font, size=8)
+            for network_dict in NETWORK_LIST:
+                key_list, value_list = [], []
+                for key, value in network_dict.iteritems():
+                    key_list.append(key)
+                    value_list.append(value)
+                key_num = len(key_list)
+                # 绘制表格
+                R_start = table_location
+                for R_index in range(key_num+1):
+                    if R_index == 0:
+                        C_start = column_start
+                        self.can.setFillColor(aColor=colors.lightgrey)
+                        self.can.rect(x=C_start, y=R_start, width=line_width, height=row_height, fill=1)
+                    else:
+                        C_start = column_start
+                        self.can.rect(x=C_start, y=R_start, width=column_width_a, height=row_height, fill=0)
+                        C_start += column_width_a
+                        self.can.rect(x=C_start, y=R_start, width=column_width_b, height=row_height, fill=0)
+                    R_start -= row_height
+                # 填入数据
+                R_start = table_location
+                for R_index in range(key_num+1):
+                    if R_index == 0:
+                        self.can.setFillColor(aColor=colors.black)
+                        text_start = content_a_start
+                        self.can.drawString(x=text_start, y=R_start + 0.1 * inch, text="Web API: /api/cmminfo/network/")
+                    else:
+                        temp_index = R_index - 1
+                        self.can.setFillColor(aColor=colors.darkblue)
+                        text_start = content_a_start
+                        temp_text = key_list[temp_index]
+                        self.can.drawString(x=text_start,y=R_start+0.1*inch,text=str(temp_text))
+                        self.can.setFillColor(aColor=colors.black)
+                        text_start = content_b_start
+                        temp_text = value_list[temp_index]
+                        self.can.drawString(x=text_start,y=R_start+0.1*inch,text=str(temp_text))
+                    R_start -= row_height
+                self.can.showPage()
         elif page == "PSU_API" or page == "PSU_OEM":
             if not PSU_API_DICT:
                 return False
@@ -235,19 +489,19 @@ class PDFCreator(object):
             PSU_num = len(PSU_keys)
             KEY_num = len(KEY_keys)
             if PSU_num == 4:
-                column_width = 1.5 * inch
+                column_width = 1.2 * inch
                 line_width = (PSU_num+1)*column_width
                 row_height = 0.3*inch
                 column_start = self.line_start+(6.5*inch-line_width)/2
                 content_text_start = column_start+0.1*inch
-                self.can.setFont(psfontname=self.title_font,size=10)
+                self.can.setFont(psfontname=self.title_font,size=8)
                 # 绘制表格
                 R_start = location
                 for R_index in range(KEY_num+1):
                     C_start = column_start
                     if R_index == 0:
                         for C_index in range(PSU_num+1):
-                            self.can.setFillColor(aColor=colors.lightblue)
+                            self.can.setFillColor(aColor=colors.lightgrey)
                             self.can.rect(x=C_start,y=R_start,width=column_width,height=row_height,fill=1)
                             C_start += column_width
                     else:
@@ -346,14 +600,14 @@ class PDFCreator(object):
                     i = i%3
                 location = table_location - i*9*0.3*inch
                 R_start = location
-                self.can.setFont(psfontname=self.title_font,size=10)
+                self.can.setFont(psfontname=self.title_font,size=8)
                 text_start = content_text_start
                 # 绘制表格
                 for R_index in range(len(Duty_list)+1):
                     C_start = column_start
                     if R_index == 0:
                         for C_index in range(6):
-                            self.can.setFillColor(aColor=colors.lightblue)
+                            self.can.setFillColor(aColor=colors.lightgrey)
                             self.can.rect(x=C_start,y=R_start,width=column_width,height=row_height,fill=1)
                             C_start += column_width
                     else:
@@ -422,21 +676,35 @@ class PDFCreator(object):
         # 结果总结页
         pdf.head(log_data, headtext="Result Summary", page="summary")
         pdf.data(log_data, page="summary")
+        # Network 信息
+        if NETWORK_LIST:
+            pdf.head(page="content")
+            pdf.data(log_data, page="NETWORK")
+        # FRU 信息
+        if FRU_LIST:
+            pdf.head(page="content")
+            pdf.data(log_data, page="FRU")
+        # Node 资产信息
+        if NODE_ASSET_DICT:
+            pdf.data(log_data, page="NODE_ASSET")
         # PSU API 信息
-        pdf.head(log_data, page="content")
-        pdf.data(log_data, page="PSU_API")
+        if PSU_API_DICT:
+            pdf.head(page="content")
+            pdf.data(log_data, page="PSU_API")
         # PSU OEM 信息
-        pdf.head(log_data, page="content")
-        pdf.data(log_data, page="PSU_OEM")
-        # FAN API 信息
-        pdf.head(log_data, page="content")
-        pdf.data(log_data, page="FAN_API")
-        # FAN OEM 信息
-        page_show = False if TABLE_NUM == 1 else True
-        pdf.head(log_data, page="content", page_show=page_show)
-        pdf.data(log_data, page="FAN_OEM")
+        if PSU_OEM_DICT:
+            pdf.head(page="content")
+            pdf.data(log_data, page="PSU_OEM")
+        if FAN_LIST:
+            # FAN API 信息
+            pdf.head(page="content")
+            pdf.data(log_data, page="FAN_API")
+            # FAN OEM 信息
+            page_show = False if TABLE_NUM == 1 else True
+            pdf.head(page="content", page_show=page_show)
+            pdf.data(log_data, page="FAN_OEM")
         # 结果详细信息页
-        pdf.head(log_data, page="content")
+        pdf.head(page="content")
         pdf.data(log_data, page="content")
         pdf.save()
 

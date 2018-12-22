@@ -3,7 +3,7 @@ Log Server
     串口日志将会以日期建立目录存放，日志文件名格式: ${IP}_${port}.log
     北京: 10.0.21.63  /log        (脚本目录: /var/www/html/Platform/Log/lib/shell/)
     昆山: 10.8.27.211 /home/log   (脚本目录: /root/LogServerScripts/)
-    天津: 10.2.34.225 /log        (脚本目录: /root/LogServerScripts/)
+    天津: 10.2.34.137 /log        (脚本目录: /root/LogServerScripts/)
 
 0. 准备
     安装socat和screen
@@ -11,7 +11,7 @@ Log Server
         yum install screen
 1. 开启监控
     Usage: bash run.sh serial < IP > < port > < log path >
-    eg: bash run.sh serial 10.2.63.10 5000 /home/log
+    eg: bash run.sh serial 10.2.63.10 5000 /log
     注意: < log path > 是日志存放的主目录
 2. 停止监控
     Usage: bash end.sh < IP > < port >

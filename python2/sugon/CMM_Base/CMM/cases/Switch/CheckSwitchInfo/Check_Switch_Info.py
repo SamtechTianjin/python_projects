@@ -35,6 +35,8 @@ GET_SWITCH_OEM = "raw 0x3a 0x5f"
 SET_SWITCH_OEM = "raw 0x3a 0x5e"
 IPMITOOL = "ipmitool -I lanplus -H {0} -U {1} -P {2}".format(IP,USERNAME,PASSWORD)
 
+Present_switch = []
+
 """
 API接口返回值:
 id,swPresent,Present,Status,Vendor,SwitchType,Temperature,Pwr_consump,IP,Netmask,Gateway
@@ -257,7 +259,38 @@ def parse_Gateway(temp_list):
         Gateway = "Unknown"
     return Gateway
 
-
+def getSwitchNumber():
+    is_fail = False
+    restapi = "/api/cmminfo/switchescount"
+    cmd = "curl -X GET -H \"X-CSRFTOKEN:%s\" http://%s%s -b cookie 2>/dev/null" %(CSRFToken,IP,restapi)
+    status,output = CMM.retry_run_cmd(cmd)
+    message = "[API] Get switch number\n{0}\nreturncode: {1}\n{2}".format(cmd,status,output)
+    CMM.save_data(main_log,message,timestamp=False)
+    if status == 0:
+        try:
+            json_data = json.loads(output)
+        except Exception as e:
+            is_fail = True
+            message = "[Exception] {0}".format(e)
+            CMM.show_message(message,timestamp=False,color="red")
+            CMM.save_data(main_log,message,timestamp=False)
+            MAIN_LOG_list.append(message)
+        else:
+            switchtotal = json_data.get("switchtotal")
+            swpresenttotal = json_data.get("swpresenttotal")
+            if switchtotal != SWITCH_NUM:
+                is_fail = True
+                temp_text = "Switch total number: {0}".format(switchtotal)
+                MAIN_LOG_list.append(temp_text)
+                CMM.show_message(temp_text,timestamp=False,color="red")
+            if swpresenttotal != len(Present_switch):
+                is_fail = True
+                temp_text = "Switch present number: {0}".format(swpresenttotal)
+                MAIN_LOG_list.append(temp_text)
+                CMM.show_message(temp_text, timestamp=False, color="red")
+    else:
+        is_fail = True
+    return False if is_fail else True
 
 
 
@@ -279,35 +312,37 @@ class CMMTest(unittest.TestCase,CMM):
         global CASE_PASS
         global LOGIN_FAIL
         global CSRFToken
-        CMM.show_message(format_item("Login Web"),color="green",timestamp=False)
+        message = "Login Web"
+        CMM.show_message(format_item(message),color="green",timestamp=False)
         status, output = CMM.curl_login_logout(IP, flag="login", username=USERNAME, password=PASSWORD)
         if status == 0:
-            message = "[curl] Login Web successfully."
-            CMM.save_data(main_log, message)
-            show_step_result("[curl] Login Web", flag="PASS")
+            show_step_result(message, flag="PASS")
+            CMM.save_step_result(main_log,message,"PASS")
             CSRFToken = output.strip()
         else:
-            CASE_PASS = False
-            message = "[curl] Login Web FAIL !\n{0}".format(output)
-            CMM.save_data(main_log, message)
-            show_step_result("[curl] Login Web", flag="FAIL")
-            MAIN_LOG_list.append("[curl] Login Web FAIL !")
             LOGIN_FAIL = True
+            CASE_PASS = False
+            show_step_result(message,"FAIL")
+            CMM.save_step_result(main_log,message,"FAIL")
+            MAIN_LOG_list.append("{0} FAIL !".format(message))
 
     def c_check_switch_info(self):
         if LOGIN_FAIL:
             return False
         global CASE_PASS
+        global Present_switch
         temp_text = "- Check switch info -"
         CMM.show_message(format_item(temp_text),color="green",timestamp=False)
         CMM.save_data(main_log,temp_text,timestamp=False)
-        # MAIN_LOG_list.append(temp_text)
         id_list,Present_list,Status_list,Vendor_list,SwitchType_list,Temperature_list,Pwr_consump_list,IP_list,Netmask_list,Gateway_list = [],[],[],[],[],[],[],[],[],[]
         for id in range(1,int(SWITCH_NUM)+1):
             switch = "Switch{0}".format(id)
             is_fail = False
             OEM_info = GetSwitchInfoViaOEM(id)
             API_info = GetSwitchInfoViaAPI(CSRFToken,id)
+            """ 获得在位的switch信息 Present_switch(list) """
+            if API_info.get("swPresent") == 1:
+                Present_switch.append(id)
             if OEM_info and API_info:
                 temp_list = OEM_info.split()
                 # Check Switch id
@@ -471,7 +506,27 @@ class CMMTest(unittest.TestCase,CMM):
             for item in l:
                 MAIN_LOG_list.append(item)
 
-    def d_set_switch_ipv4_via_OEM(self):
+    def d_get_switch_number(self):
+        if LOGIN_FAIL:
+            return False
+        global CASE_PASS
+        temp_text = "- Get Switch count -"
+        CMM.show_message(format_item(temp_text),timestamp=False,color="green")
+        CMM.save_data(main_log,temp_text,timestamp=False)
+        MAIN_LOG_list.append(temp_text)
+        message = temp_text.strip(" -")
+        status = getSwitchNumber()
+        if status:
+            show_step_result(message,"PASS")
+            CMM.save_step_result(main_log,message,"PASS")
+        else:
+            CASE_PASS = False
+            show_step_result(message,"FAIL")
+            CMM.save_step_result(main_log,message,"FAIL")
+
+    def m_set_switch_ipv4_via_OEM(self):
+        if LOGIN_FAIL:
+            return False
         global CASE_PASS
         temp_text = "- Set Switch ipv4 via OEM command -"
         CMM.show_message(format_item(temp_text), color="green", timestamp=False)
@@ -490,7 +545,7 @@ class CMMTest(unittest.TestCase,CMM):
             set_Gateway = "10.0.0.254"
             status = set_switch_ipv4_OEM(switch_id,set_IP,set_Netmask,set_Gateway)
             if status:
-                time.sleep(10)
+                time.sleep(20)
                 API_info = GetSwitchInfoViaAPI(CSRFToken, switch_id)
                 get_IP,get_Netmask,get_Gateway = [API_info.get(item) for item in ["IP","Netmask","Gateway"]]
                 if set_IP != get_IP or set_Netmask != get_Netmask or set_Gateway != get_Gateway:
@@ -504,7 +559,7 @@ class CMMTest(unittest.TestCase,CMM):
                     show_step_result("[OEM] Set switch{0} ipv4".format(switch_id),flag="PASS")
                     status = set_switch_ipv4_OEM(switch_id,default_IP,default_Netmask,default_Gateway)
                     if status:
-                        time.sleep(10)
+                        time.sleep(20)
                         API_info = GetSwitchInfoViaAPI(CSRFToken, switch_id)
                         get_IP, get_Netmask, get_Gateway = [API_info.get(item) for item in ["IP", "Netmask", "Gateway"]]
                         temp_text = "[OEM] Restore switch{0} ipv4".format(switch_id)
@@ -514,7 +569,6 @@ class CMMTest(unittest.TestCase,CMM):
                         else:
                             show_step_result(temp_text,flag="FAIL")
                             CMM.save_step_result(main_log,temp_text,flag="FAIL")
-
             else:
                 CASE_PASS = False
                 message = "[OEM] Set switch{0} ipv4 FAIL !".format(switch_id)
@@ -522,7 +576,7 @@ class CMMTest(unittest.TestCase,CMM):
                 CMM.save_data(main_log,message,timestamp=False)
                 MAIN_LOG_list.append(message)
 
-    def f_set_switch_ipv4_via_API(self):
+    def n_set_switch_ipv4_via_API(self):
         if LOGIN_FAIL:
             return False
         global CASE_PASS
@@ -543,7 +597,7 @@ class CMMTest(unittest.TestCase,CMM):
             set_Gateway = "10.0.0.254"
             set_value = set_switch_ipv4_API(switch_id,set_IP,set_Netmask,set_Gateway)
             if set_value:
-                time.sleep(10)
+                time.sleep(20)
                 API_info = GetSwitchInfoViaAPI(CSRFToken, switch_id)
                 set_IP,set_Netmask,set_Gateway = [set_value.get(item) for item in ["IP","Netmask","Gateway"]]
                 get_IP,get_Netmask,get_Gateway = [API_info.get(item) for item in ["IP","Netmask","Gateway"]]
@@ -558,7 +612,7 @@ class CMMTest(unittest.TestCase,CMM):
                     show_step_result("[API] Set switch{0} ipv4".format(switch_id),flag="PASS")
                     set_value = set_switch_ipv4_API(switch_id,default_IP,default_Netmask,default_Gateway)
                     if set_value:
-                        time.sleep(10)
+                        time.sleep(20)
                         API_info = GetSwitchInfoViaAPI(CSRFToken, switch_id)
                         set_IP, set_Netmask, set_Gateway = [set_value.get(item) for item in["IP", "Netmask", "Gateway"]]
                         get_IP, get_Netmask, get_Gateway = [API_info.get(item) for item in ["IP", "Netmask", "Gateway"]]
@@ -576,19 +630,18 @@ class CMMTest(unittest.TestCase,CMM):
                 CMM.save_data(main_log,message,timestamp=False)
                 MAIN_LOG_list.append(message)
 
-    def g_curl_logout(self):
+    def y_curl_logout(self):
         if LOGIN_FAIL:
             return False
-        CMM.show_message(format_item("Logout Web"),color="green",timestamp=False)
+        message = "Logout Web"
+        CMM.show_message(format_item(message),color="green",timestamp=False)
         status, output = CMM.curl_login_logout(IP, flag="logout", username=USERNAME, password=PASSWORD, csrf_token=CSRFToken)
         if status == 0:
-            message = "[curl] Logout Web successfully."
-            CMM.save_data(main_log, message)
-            show_step_result("[curl] Logout Web", flag="PASS")
+            show_step_result(message,"PASS")
+            CMM.save_step_result(main_log,message,"PASS")
         else:
-            message = "[curl] Logout Web FAIL !\n{0}".format(output)
-            CMM.save_data(main_log, message)
-            show_step_result("[curl] Logout Web", flag="FAIL")
+            show_step_result(message,"FAIL")
+            CMM.save_step_result(main_log,message,"FAIL")
 
     def z_finish(self):
         CMM.save_data(MAIN_LOG,"{0} {1}".format("PASS:" if CASE_PASS else "FAIL:",module_name.replace("_"," ")))

@@ -8,6 +8,7 @@ import time,datetime
 import json
 import re
 import random
+import threading
 lis = re.split(r'[/\\]',os.path.abspath(__file__))
 path = os.sep.join(lis[0:lis.index("CMM")+1])
 sys.path.append(path)
@@ -54,6 +55,9 @@ API_data = {}
 RANDOM_BASE = random.randrange(100, 200)
 Convert_Wait_Time = 120
 
+Global_power_dict = {}
+LOCK = threading.Lock()
+
 """
 API接口返回值:
 PwrState,Present,UID,PwrConsumption
@@ -83,8 +87,7 @@ def check_node_Present(node_id):
     OEM_Present = "Unknown"
     if status == 0:
         temp_list = output.split()
-        if temp_list[0] == "00":
-            OEM_Present = temp_list[1]
+        OEM_Present = temp_list[1]
     if not OEM_data.has_key(node_name):
         OEM_data[node_name] = {}
     OEM_data[node_name]["Present"] = OEM_Present
@@ -143,8 +146,7 @@ def check_node_PwrState(node_id):
     OEM_PwrState = "Unknown"
     if status == 0:
         temp_list = output.split()
-        if temp_list[0] == "00":
-            OEM_PwrState = temp_list[1]
+        OEM_PwrState = temp_list[1]
     if not OEM_data.has_key(node_name):
         OEM_data[node_name] = {}
     OEM_data[node_name]["PwrState"] = OEM_PwrState
@@ -202,8 +204,7 @@ def check_node_UID(node_id):
     OEM_UID = "Unknown"
     if status == 0:
         temp_list = output.split()
-        if temp_list[0] == "00":
-            OEM_UID = temp_list[1]
+        OEM_UID = temp_list[1]
     if not OEM_data.has_key(node_name):
         OEM_data[node_name] = {}
     OEM_data[node_name]["UID"] = OEM_UID
@@ -261,8 +262,7 @@ def check_node_PwrConsumption(node_id):
     OEM_PwrConsumption = "Unknown"
     if status == 0:
         temp_list = output.split()
-        if temp_list[0] == "00":
-            OEM_PwrConsumption = " ".join(temp_list[1:])
+        OEM_PwrConsumption = " ".join(temp_list[1:])
     if not OEM_data.has_key(node_name):
         OEM_data[node_name] = {}
     OEM_data[node_name]["PwrConsumption"] = OEM_PwrConsumption
@@ -324,16 +324,15 @@ def check_node_FW(node_id):
         temp = "Unknown"
         if status == 0:
             temp_list = output.split()
-            if temp_list[0] == "00":
-                if index == 0:
-                    temp = " ".join(temp_list[1:])
-                else:
-                    mid_list = []
-                    for i in temp_list[1:]:
-                        if i == "00":
-                            break
-                        mid_list.append(i)
-                    temp = " ".join(mid_list)
+            if index == 0:
+                temp = " ".join(temp_list[1:])
+            else:
+                mid_list = []
+                for i in temp_list[1:]:
+                    if i == "00":
+                        break
+                    mid_list.append(i)
+                temp = " ".join(mid_list)
         if not OEM_data.has_key(node_name):
             OEM_data[node_name] = {}
         OEM_data[node_name][item] = temp
@@ -371,11 +370,9 @@ def compare_node_FW(FW_dict,node_id):
         API_temp = FW_dict.get("API_{0}".format(item))
         oem = ""
         if index == 0:
-            for i in OEM_temp.split():
-                if oem:
-                    oem += ".{0}".format(int(i,16))
-                else:
-                    oem += "{0}".format(int(i,16))
+            """ eg: '03 61 b5' >>> '3.61' """
+            temp_list = OEM_temp.split()
+            oem = "{0}.{1}".format(int(temp_list[0]),int(temp_list[1]))
         elif index == 1:
             for i in OEM_temp.split():
                 text = chr(int(i,16))
@@ -387,6 +384,9 @@ def compare_node_FW(FW_dict,node_id):
         elif index == 2:
             API_temp = ""
         if oem == API_temp and API_temp != "Unknown":
+            show_step_result(temp_text, "PASS")
+            CMM.save_step_result(main_log, temp_text, flag="PASS")
+        elif re.match(r'{0}'.format(oem),API_temp) and index == 0 and API_temp != "Unknown":
             show_step_result(temp_text, "PASS")
             CMM.save_step_result(main_log, temp_text, flag="PASS")
         else:
@@ -427,15 +427,14 @@ def check_node_FRU(node_id):
                 temp = "Unknown"
                 if status == 0:
                     temp_list = output.split()
-                    if temp_list[0] == "00":
-                        if index2 == 3:
-                            mid_list = []
-                            for i in temp_list[1:]:
-                                if i == "00":
-                                    break
-                                mid_list.append(i)
-                            temp = " ".join(mid_list)
-                        else:continue   # TODO: "Manufacturer","Name","PN","Assert_Tag"
+                    if index2 == 3:
+                        mid_list = []
+                        for i in temp_list[1:]:
+                            if i == "00":
+                                break
+                            mid_list.append(i)
+                        temp = " ".join(mid_list)
+                    else:continue   # TODO: "Manufacturer","Name","PN","Assert_Tag"
                 if not OEM_data.has_key(node_name):
                     OEM_data[node_name] = {}
                 OEM_data[node_name][temp_item] = temp
@@ -508,8 +507,7 @@ def check_node_LAN(node_id):
             temp = "Unknown"
             if status == 0:
                 temp_list = output.split()
-                if temp_list[0] == "00":
-                    temp = " ".join(temp_list[1:])
+                temp = " ".join(temp_list[1:])
             if not OEM_data.has_key(node_name):
                 OEM_data[node_name] = {}
             OEM_LAN["LAN{0}".format(channel_num)][item] = temp
@@ -705,7 +703,7 @@ def set_node_power_via_API(node_id,retry_count=3,interval=20):
     if not set_ok:
         return False
     # 3. Power cycle
-    wait_time = 30
+    wait_time = 60
     status = control_node_power_via_API(node_id,flag="Power Cycle")
     fail_message = "[Node{0}] Power Cycle FAIL !".format(API_id)
     if not status:
@@ -727,7 +725,6 @@ def set_node_power_via_API(node_id,retry_count=3,interval=20):
         power_status = temp_dict.get("API_PwrState")
         if power_status == "Power Off":
             break
-        time.sleep(1)
     # Wait power on
     start_time = datetime.datetime.now()
     while True:
@@ -742,7 +739,6 @@ def set_node_power_via_API(node_id,retry_count=3,interval=20):
         power_status = temp_dict.get("API_PwrState")
         if power_status == "Power On":
             break
-        time.sleep(1)
     show_step_result("[Node{0}] Power Cycle".format(API_id),"PASS")
     return True
 
@@ -772,7 +768,6 @@ def controll_node_uid_via_API(node_id,flag="ON"):
 
 def set_node_uid_via_API(node_id):
     API_id = node_id + 1
-    base_text = "[Node{0}] Set UID LED".format(API_id)
     # 初始化Node状态为Light Off
     status = controll_node_uid_via_API(node_id,flag="OFF")
     time.sleep(3)
@@ -1005,6 +1000,274 @@ def set_node_ipv6_via_API(node_id):
         result_operation("PASS", temp_text8)
     return False if is_fail else True
 
+def stagger_node_power_via_API():
+    restapi = "/api/cmminfo/stagger_node_power"
+    poweron_cmd_API = "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'offon':%s}\" http://%s%s -b cookie 2>/dev/null" % (CSRFToken, 1, IP, restapi)
+    poweroff_cmd_API = "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'offon':%s}\" http://%s%s -b cookie 2>/dev/null" % (CSRFToken, 0, IP, restapi)
+    is_FAIL = False
+    # Init node power: All node power on
+    is_fail = False
+    temp_text = "[Init] Set all node power on"
+    status,output = CMM.retry_run_cmd(poweron_cmd_API)
+    message = "[Init] Set all node power on\n{0}\nreturncode: {1}\n{2}".format(poweron_cmd_API, status, output)
+    CMM.save_data(main_log, message, timestamp=False)
+    time.sleep(5)
+    for node_id in range(NODE_NUM):
+        if node_id not in Present_Node:
+            continue
+        power_state = check_node_PwrState(node_id).get("API_PwrState")
+        message = "[Node{0}] Power state: {1}".format(node_id+1,power_state)
+        CMM.show_message(message,timestamp=False)
+        if power_state != "Power On":
+            is_fail = True
+        time.sleep(1)
+    if is_fail:
+        is_FAIL = True
+        result_operation("FAIL",temp_text)
+    else:
+        result_operation("PASS",temp_text)
+    # Set all node power off
+    is_fail = False
+    time.sleep(5)
+    temp_text = "Set all node power off"
+    status,output = CMM.retry_run_cmd(poweroff_cmd_API)
+    message = "Set all node power off\n{0}\nreturncode: {1}\n{2}".format(poweroff_cmd_API, status, output)
+    CMM.save_data(main_log, message, timestamp=False)
+    time.sleep(5)
+    try:
+        json_data = json.loads(output)
+    except Exception as e:
+        is_fail = True
+        CMM.show_message("{0}".format(e),timestamp=False,color="red")
+    else:
+        if json_data.get("error"):
+            is_fail = True
+            CMM.show_message("{0}".format(output),timestamp=False,color="red")
+            MAIN_LOG_list.append("{0}".format(output))
+    for node_id in range(NODE_NUM):
+        if node_id not in Present_Node:
+            continue
+        power_state = check_node_PwrState(node_id).get("API_PwrState")
+        message = "[Node{0}] Power state: {1}".format(node_id+1,power_state)
+        CMM.show_message(message,timestamp=False)
+        if power_state != "Power Off":
+            is_fail = True
+        time.sleep(1)
+    if is_fail:
+        is_FAIL = True
+        result_operation("FAIL",temp_text)
+    else:
+        result_operation("PASS",temp_text)
+    # Set all node power on
+    is_fail = False
+    time.sleep(5)
+    temp_text = "Set all node power on"
+    status,output = CMM.retry_run_cmd(poweron_cmd_API)
+    message = "Set all node power on\n{0}\nreturncode: {1}\n{2}".format(poweron_cmd_API, status, output)
+    CMM.save_data(main_log, message, timestamp=False)
+    time.sleep(5)
+    try:
+        json_data = json.loads(output)
+    except Exception as e:
+        is_fail = True
+        CMM.show_message("{0}".format(e),timestamp=False,color="red")
+    else:
+        if json_data.get("error"):
+            is_fail = True
+            CMM.show_message("{0}".format(output), timestamp=False, color="red")
+            MAIN_LOG_list.append("{0}".format(output))
+    for node_id in range(NODE_NUM):
+        if node_id not in Present_Node:
+            continue
+        power_state = check_node_PwrState(node_id).get("API_PwrState")
+        message = "[Node{0}] Power state: {1}".format(node_id+1,power_state)
+        CMM.show_message(message,timestamp=False)
+        if power_state != "Power On":
+            is_fail = True
+        time.sleep(1)
+    if is_fail:
+        is_FAIL = True
+        result_operation("FAIL",temp_text)
+    else:
+        result_operation("PASS",temp_text)
+    return False if is_FAIL else True
+
+def thread_check_power_cycle(node_id,timeout):
+    global Global_power_dict
+    API_id = node_id + 1
+    # Wait power off
+    start_time = datetime.datetime.now()
+    while True:
+        end_time = datetime.datetime.now()
+        if CMM.calc_time_interval(start_time, end_time) > timeout/2:
+            LOCK.acquire()
+            temp_text = "[Node{0} Power Cycle] Power Off exceeds {1}s".format(API_id, timeout/2)
+            MAIN_LOG_list.append(temp_text)
+            CMM.save_data(main_log, temp_text, timestamp=False)
+            Global_power_dict["node{0}_poweroff".format(API_id)] = "FAIL"
+            LOCK.release()
+            break
+        temp_dict = check_node_PwrState(node_id)
+        power_status = temp_dict.get("API_PwrState")
+        if power_status == "Power Off":
+            LOCK.acquire()
+            Global_power_dict["node{0}_poweroff".format(API_id)] = "PASS"
+            LOCK.release()
+            break
+    # Wait power on
+    start_time = datetime.datetime.now()
+    while True:
+        end_time = datetime.datetime.now()
+        if CMM.calc_time_interval(start_time, end_time) > timeout/2:
+            LOCK.acquire()
+            temp_text = "[Node{0} Power Cycle] Power On exceeds {1}s".format(API_id, timeout/2)
+            MAIN_LOG_list.append(temp_text)
+            CMM.save_data(main_log, temp_text, timestamp=False)
+            Global_power_dict["node{0}_poweron".format(API_id)] = "FAIL"
+            LOCK.release()
+            break
+        temp_dict = check_node_PwrState(node_id)
+        power_status = temp_dict.get("API_PwrState")
+        if power_status == "Power On":
+            LOCK.acquire()
+            Global_power_dict["node{0}_poweron".format(API_id)] = "PASS"
+            LOCK.release()
+            break
+
+def set_all_node_power_via_API():
+    restapi = "/api/cmminfo/setallnodepower"
+    poweroff_cmd_API = "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'cmd':%s}\" http://%s%s -b cookie 2>/dev/null" % (CSRFToken, 0, IP, restapi)
+    poweron_cmd_API = "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'cmd':%s}\" http://%s%s -b cookie 2>/dev/null" % (CSRFToken, 1, IP, restapi)
+    powercycle_cmd_API = "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'cmd':%s}\" http://%s%s -b cookie 2>/dev/null" % (CSRFToken, 2, IP, restapi)
+    is_FAIL = False
+    # Init node power: All node power on
+    is_fail = False
+    temp_text = "[Init] Set all node power on"
+    status,output = CMM.retry_run_cmd(poweron_cmd_API)
+    message = "[Init] Set all node power on\n{0}\nreturncode: {1}\n{2}".format(poweron_cmd_API, status, output)
+    CMM.save_data(main_log, message, timestamp=False)
+    time.sleep(10)
+    for node_id in range(NODE_NUM):
+        if node_id not in Present_Node:
+            continue
+        power_state = check_node_PwrState(node_id).get("API_PwrState")
+        message = "[Node{0}] Power state: {1}".format(node_id+1,power_state)
+        CMM.show_message(message,timestamp=False)
+        if power_state != "Power On":
+            is_fail = True
+        time.sleep(1)
+    if is_fail:
+        result_operation("FAIL",temp_text)
+        is_FAIL = True
+    else:
+        result_operation("PASS",temp_text)
+    # Set all node power off
+    is_fail = False
+    time.sleep(5)
+    temp_text = "Set all node power off"
+    status,output = CMM.retry_run_cmd(poweroff_cmd_API)
+    message = "Set all node power off\n{0}\nreturncode: {1}\n{2}".format(poweroff_cmd_API, status, output)
+    CMM.save_data(main_log, message, timestamp=False)
+    time.sleep(10)
+    try:
+        json_data = json.loads(output)
+    except Exception as e:
+        is_fail = True
+        CMM.show_message("{0}".format(e),timestamp=False,color="red")
+    else:
+        if json_data.get("error"):
+            is_fail = True
+            CMM.show_message("{0}".format(output),timestamp=False,color="red")
+            MAIN_LOG_list.append("{0}".format(output))
+    for node_id in range(NODE_NUM):
+        if node_id not in Present_Node:
+            continue
+        power_state = check_node_PwrState(node_id).get("API_PwrState")
+        message = "[Node{0}] Power state: {1}".format(node_id+1,power_state)
+        CMM.show_message(message,timestamp=False)
+        if power_state != "Power Off":
+            is_fail = True
+        time.sleep(1)
+    if is_fail:
+        result_operation("FAIL",temp_text)
+        is_FAIL = True
+    else:
+        result_operation("PASS",temp_text)
+    # Set all node power on
+    is_fail = False
+    time.sleep(5)
+    temp_text = "Set all node power on"
+    status,output = CMM.retry_run_cmd(poweron_cmd_API)
+    message = "Set all node power on\n{0}\nreturncode: {1}\n{2}".format(poweron_cmd_API, status, output)
+    CMM.save_data(main_log, message, timestamp=False)
+    time.sleep(10)
+    try:
+        json_data = json.loads(output)
+    except Exception as e:
+        is_fail = True
+        CMM.show_message("{0}".format(e),timestamp=False,color="red")
+    else:
+        if json_data.get("error"):
+            is_fail = True
+            CMM.show_message("{0}".format(output), timestamp=False, color="red")
+            MAIN_LOG_list.append("{0}".format(output))
+    for node_id in range(NODE_NUM):
+        if node_id not in Present_Node:
+            continue
+        power_state = check_node_PwrState(node_id).get("API_PwrState")
+        message = "[Node{0}] Power state: {1}".format(node_id+1,power_state)
+        CMM.show_message(message,timestamp=False)
+        if power_state != "Power On":
+            is_fail = True
+        time.sleep(1)
+    if is_fail:
+        result_operation("FAIL",temp_text)
+        is_FAIL = True
+    else:
+        result_operation("PASS",temp_text)
+    # Set all node power cycle
+    is_fail = False
+    timeout = 30 * NODE_NUM
+    time.sleep(5)
+    temp_text = "Set all node power cycle"
+    status,output = CMM.retry_run_cmd(powercycle_cmd_API)
+    message = "Set all node power cycle\n{0}\nreturncode: {1}\n{2}".format(powercycle_cmd_API, status, output)
+    CMM.save_data(main_log, message, timestamp=False)
+    threads = []
+    for node_id in range(NODE_NUM):
+        if node_id not in Present_Node:
+            continue
+        t = threading.Thread(target=thread_check_power_cycle,args=(node_id,timeout))
+        threads.append(t)
+        t.setDaemon(True)
+        t.start()
+    for t in threads:
+        t.join(timeout)
+    for node_id in range(NODE_NUM):
+        if node_id not in Present_Node:
+            continue
+        API_id = node_id + 1
+        temp_key = "node{0}_poweroff".format(API_id)
+        if Global_power_dict.get(temp_key) == "PASS":
+            result_operation("PASS", temp_key)
+        else:
+            is_fail = True
+            result_operation("FAIL", temp_key)
+        temp_key = "node{0}_poweron".format(API_id)
+        if Global_power_dict.get(temp_key) == "PASS":
+            result_operation("PASS", temp_key)
+        else:
+            is_fail = True
+            result_operation("FAIL", temp_key)
+    if is_fail:
+        result_operation("FAIL",temp_text)
+        is_FAIL = True
+    else:
+        result_operation("PASS",temp_text)
+    return False if is_FAIL else True
+
+
+
 
 
 
@@ -1026,21 +1289,19 @@ class CMMTest(unittest.TestCase,CMM):
         global CASE_PASS
         global LOGIN_FAIL
         global CSRFToken
-        CMM.show_message(format_item("Login Web"),color="green",timestamp=False)
+        message = "Login Web"
+        CMM.show_message(format_item(message),color="green",timestamp=False)
         status, output = CMM.curl_login_logout(IP, flag="login", username=USERNAME, password=PASSWORD)
         if status == 0:
-            message = "[curl] Login Web successfully."
-            CMM.save_data(main_log, message,timestamp=False)
-            show_step_result("[curl] Login Web", flag="PASS")
+            show_step_result(message, flag="PASS")
+            CMM.save_step_result(main_log,message,"PASS")
             CSRFToken = output.strip()
         else:
-            CASE_PASS = False
-            message = "[curl] Login Web FAIL !"
-            MAIN_LOG_list.append(message)
-            message = "{0}\n{1}".format(message,output)
-            CMM.save_data(main_log, message,timestamp=False)
-            show_step_result("[curl] Login Web", flag="FAIL")
             LOGIN_FAIL = True
+            CASE_PASS = False
+            show_step_result(message,"FAIL")
+            CMM.save_step_result(main_log,message,"FAIL")
+            MAIN_LOG_list.append("{0} FAIL !".format(message))
 
     def c_check_node_Present(self):
         if LOGIN_FAIL:
@@ -1063,6 +1324,7 @@ class CMMTest(unittest.TestCase,CMM):
                 CMM.save_step_result(main_log,message,flag="FAIL")
             time.sleep(1)
 
+    #"""
     def d_check_node_PwrState(self):
         if LOGIN_FAIL:
             return False
@@ -1212,29 +1474,29 @@ class CMMTest(unittest.TestCase,CMM):
         CMM.save_data(MAIN_LOG,"OEM_NODE_INFO:{0}".format(OEM_data),timestamp=False)
         CMM.save_data(MAIN_LOG,"API_NODE_INFO:{0}".format(API_data),timestamp=False)
 
-    def k_check_node_num_via_API(self):
-        if LOGIN_FAIL:
-            return False
-        global CASE_PASS
-        temp_text = "- Check node number -"
-        CMM.show_message(format_item(temp_text),color="green",timestamp=False)
-        CMM.save_data(main_log,temp_text,timestamp=False)
-        MAIN_LOG_list.append(temp_text)
-        status = check_node_num_via_API()
-        message = temp_text.strip("- ")
-        if status:
-            show_step_result(message, flag="PASS")
-            CMM.save_step_result(main_log, message, flag="PASS")
-        else:
-            CASE_PASS = False
-            show_step_result(message, flag="FAIL")
-            CMM.save_step_result(main_log, message, flag="FAIL")
+    # def k_check_node_num_via_API(self):
+    #     if LOGIN_FAIL:
+    #         return False
+    #     global CASE_PASS
+    #     temp_text = "- Check node number via API -"
+    #     CMM.show_message(format_item(temp_text),color="green",timestamp=False)
+    #     CMM.save_data(main_log,temp_text,timestamp=False)
+    #     MAIN_LOG_list.append(temp_text)
+    #     status = check_node_num_via_API()
+    #     message = temp_text.strip("- ")
+    #     if status:
+    #         show_step_result(message, flag="PASS")
+    #         CMM.save_step_result(main_log, message, flag="PASS")
+    #     else:
+    #         CASE_PASS = False
+    #         show_step_result(message, flag="FAIL")
+    #         CMM.save_step_result(main_log, message, flag="FAIL")
 
     def o_set_node_uid_via_API(self):
         if LOGIN_FAIL:
             return False
         global CASE_PASS
-        temp_text = "- Set node UID LED -"
+        temp_text = "- Set node UID LED via API -"
         CMM.show_message(format_item(temp_text),color="green",timestamp=False)
         CMM.save_data(main_log,temp_text,timestamp=False)
         MAIN_LOG_list.append(temp_text)
@@ -1256,7 +1518,7 @@ class CMMTest(unittest.TestCase,CMM):
         if LOGIN_FAIL:
             return False
         global CASE_PASS
-        temp_text = "- Set node power state -"
+        temp_text = "- Set node power state via API -"
         CMM.show_message(format_item(temp_text),color="green",timestamp=False)
         CMM.save_data(main_log,temp_text,timestamp=False)
         MAIN_LOG_list.append(temp_text)
@@ -1278,7 +1540,7 @@ class CMMTest(unittest.TestCase,CMM):
         if LOGIN_FAIL:
             return False
         global CASE_PASS
-        temp_text = "- Set node ipv4 Static IP -"
+        temp_text = "- Set node ipv4 Static IP via API -"
         CMM.show_message(format_item(temp_text),color="green",timestamp=False)
         CMM.save_data(main_log,temp_text,timestamp=False)
         MAIN_LOG_list.append(temp_text)
@@ -1300,7 +1562,7 @@ class CMMTest(unittest.TestCase,CMM):
         if LOGIN_FAIL:
             return False
         global CASE_PASS
-        temp_text = "- Set node ipv6 Static IP -"
+        temp_text = "- Set node ipv6 Static IP via API -"
         CMM.show_message(format_item(temp_text),color="green",timestamp=False)
         CMM.save_data(main_log,temp_text,timestamp=False)
         MAIN_LOG_list.append(temp_text)
@@ -1318,19 +1580,57 @@ class CMMTest(unittest.TestCase,CMM):
                 CMM.save_step_result(main_log, message, flag="FAIL")
             time.sleep(1)
 
+    def s_stagger_node_power_via_API(self):
+        if LOGIN_FAIL:
+            return False
+        global CASE_PASS
+        temp_text = "- Stagger node power via API -"
+        CMM.show_message(format_item(temp_text),color="green",timestamp=False)
+        CMM.save_data(main_log,temp_text,timestamp=False)
+        MAIN_LOG_list.append(temp_text)
+        message = temp_text.strip(" -")
+        status = stagger_node_power_via_API()
+        if status:
+            show_step_result(message, flag="PASS")
+            CMM.save_step_result(main_log, message, flag="PASS")
+        else:
+            CASE_PASS = False
+            show_step_result(message, flag="FAIL")
+            CMM.save_step_result(main_log, message, flag="FAIL")
+    #"""
+
+    def t_set_all_node_power_via_API(self):
+        if LOGIN_FAIL:
+            return False
+        global CASE_PASS
+        temp_text = "- Set all node power via API -"
+        CMM.show_message(format_item(temp_text),color="green",timestamp=False)
+        CMM.save_data(main_log,temp_text,timestamp=False)
+        MAIN_LOG_list.append(temp_text)
+        message = temp_text.strip(" -")
+        status = set_all_node_power_via_API()
+        temp = json.dumps(Global_power_dict,indent=4)
+        print(temp)
+        if status:
+            show_step_result(message, flag="PASS")
+            CMM.save_step_result(main_log, message, flag="PASS")
+        else:
+            CASE_PASS = False
+            show_step_result(message, flag="FAIL")
+            CMM.save_step_result(main_log, message, flag="FAIL")
+
     def y_curl_logout(self):
         if LOGIN_FAIL:
             return False
-        CMM.show_message(format_item("Logout Web"),color="green",timestamp=False)
+        message = "Logout Web"
+        CMM.show_message(format_item(message),color="green",timestamp=False)
         status, output = CMM.curl_login_logout(IP, flag="logout", username=USERNAME, password=PASSWORD, csrf_token=CSRFToken)
         if status == 0:
-            message = "[curl] Logout Web successfully."
-            CMM.save_data(main_log, message,timestamp=False)
-            show_step_result("[curl] Logout Web", flag="PASS")
+            show_step_result(message,"PASS")
+            CMM.save_step_result(main_log,message,"PASS")
         else:
-            message = "[curl] Logout Web FAIL !\n{0}".format(output)
-            CMM.save_data(main_log, message,timestamp=False)
-            show_step_result("[curl] Logout Web", flag="FAIL")
+            show_step_result(message,"FAIL")
+            CMM.save_step_result(main_log,message,"FAIL")
 
     def z_finish(self):
         CMM.save_data(MAIN_LOG,"{0} {1}".format("PASS:" if CASE_PASS else "FAIL:",module_name.replace("_"," ")))

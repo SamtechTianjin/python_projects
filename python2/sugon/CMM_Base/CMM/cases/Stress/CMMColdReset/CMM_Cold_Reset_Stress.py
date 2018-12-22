@@ -28,6 +28,7 @@ STRESS_TIME = config.COLD_RESET_TIME
 PSU_NUM = config.PSU_NUM
 SWITCH_NUM = config.SWITCH_NUM
 FAN_NUM = config.FAN_NUM
+NODE_NUM = config.NODE_NUM
 
 # Global variable
 CSRFToken = ""
@@ -45,6 +46,7 @@ RESET_OEM = "raw 0x06 0x02"
 GET_PSU_API = "/api/cmminfo/psus/"
 GET_FAN_API = "/api/cmminfo/fans/"
 GET_SWITCH_API = "/api/cmminfo/switches/"
+GET_SINGLENODE_API = "/api/cmminfo/singlenode/"
 
 
 
@@ -140,6 +142,7 @@ def CollectAPIInfo(baseline=False,login_time=300):
     LOGIN_FAIL = False
     output = ""
     start_time = datetime.datetime.now()
+    """ Retry login after CMM reset """
     while CMM.calc_time_interval(start_time, datetime.datetime.now()) < login_time:
         status, output = CMM.curl_login_logout(IP, flag="login", username=USERNAME, password=PASSWORD)
         if status == 0:
@@ -156,6 +159,7 @@ def CollectAPIInfo(baseline=False,login_time=300):
         MAIN_LOG_list.append(message)
         LOGIN_FAIL = True
     if not LOGIN_FAIL:
+        """ API检测PSU信息 """
         for psu_id in range(1,PSU_NUM+1):
             temp_dict = {}
             check_list = ["Vendor","isPSUOn","SN","psuPresent","Model","FanDuty","id","Present"]
@@ -194,6 +198,7 @@ def CollectAPIInfo(baseline=False,login_time=300):
                                 temp_dict[item] = temp.get(item)
                 API_TEMP["psu_{0}".format(psu_id)] = temp_dict
             time.sleep(1)
+        """ API检测FAN信息 """
         for fan_id in range(1,FAN_NUM+1):
             temp_dict = {}
             check_list = ["id","FanPresent","Present","FanStatus","Duty"]
@@ -236,6 +241,7 @@ def CollectAPIInfo(baseline=False,login_time=300):
                                 temp_dict[item] = temp.get(item)
                 API_TEMP["fan_{0}".format(fan_id)] = temp_dict
             time.sleep(1)
+        """ API检测Switch信息 """
         for switch_id in range(1,SWITCH_NUM+1):
             temp_dict = {}
             check_list = ["id","swPresent","Present","Status","Vendor","SwitchType","IP","Netmask","Gateway"]
@@ -274,6 +280,73 @@ def CollectAPIInfo(baseline=False,login_time=300):
                                 temp_dict[item] = temp.get(item)
                 API_TEMP["switch_{0}".format(switch_id)] = temp_dict
             time.sleep(1)
+        """ API检测Node信息 """
+        for node_id in range(NODE_NUM):
+            API_id = node_id + 1
+            temp_dict = {}
+            check_list = {
+                "present": "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'nodeid':%s,'parameter':3,'paramdata1':%s,'paramdata2':%s}\" http://%s%s -b cookie 2>/dev/null" %(CSRFToken,API_id,"0","0",IP,GET_SINGLENODE_API),
+                "PwrState": "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'nodeid':%s,'parameter':1,'paramdata1':%s,'paramdata2':%s}\" http://%s%s -b cookie 2>/dev/null" %(CSRFToken,API_id,"0","0",IP,GET_SINGLENODE_API),
+                "UID": "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'nodeid':%s,'parameter':7,'paramdata1':%s,'paramdata2':%s}\" http://%s%s -b cookie 2>/dev/null" %(CSRFToken,API_id,"0","0",IP,GET_SINGLENODE_API),
+                "LAN1_IPv4Addr": "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'nodeid':%s,'parameter':11,'paramdata1':%s,'paramdata2':%s}\" http://%s%s -b cookie 2>/dev/null" %(CSRFToken,API_id,1,3,IP,GET_SINGLENODE_API),
+                "LAN8_IPv4Addr": "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'nodeid':%s,'parameter':11,'paramdata1':%s,'paramdata2':%s}\" http://%s%s -b cookie 2>/dev/null" %(CSRFToken,API_id,8,3,IP,GET_SINGLENODE_API),
+                "LAN1_IPv4Src": "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'nodeid':%s,'parameter':11,'paramdata1':%s,'paramdata2':%s}\" http://%s%s -b cookie 2>/dev/null" %(CSRFToken,API_id,1,4,IP,GET_SINGLENODE_API),
+                "LAN8_IPv4Src": "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'nodeid':%s,'parameter':11,'paramdata1':%s,'paramdata2':%s}\" http://%s%s -b cookie 2>/dev/null" %(CSRFToken,API_id,8,4,IP,GET_SINGLENODE_API),
+                "LAN1_MACAddr": "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'nodeid':%s,'parameter':11,'paramdata1':%s,'paramdata2':%s}\" http://%s%s -b cookie 2>/dev/null" % (CSRFToken, API_id, 1, 5, IP, GET_SINGLENODE_API),
+                "LAN8_MACAddr": "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'nodeid':%s,'parameter':11,'paramdata1':%s,'paramdata2':%s}\" http://%s%s -b cookie 2>/dev/null" % (CSRFToken, API_id, 8, 5, IP, GET_SINGLENODE_API),
+                "LAN1_IPv4SubMask": "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'nodeid':%s,'parameter':11,'paramdata1':%s,'paramdata2':%s}\" http://%s%s -b cookie 2>/dev/null" % (CSRFToken, API_id, 1, 6, IP, GET_SINGLENODE_API),
+                "LAN8_IPv4SubMask": "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'nodeid':%s,'parameter':11,'paramdata1':%s,'paramdata2':%s}\" http://%s%s -b cookie 2>/dev/null" % (CSRFToken, API_id, 8, 6, IP, GET_SINGLENODE_API),
+                "LAN1_IPv4DefGateway": "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'nodeid':%s,'parameter':11,'paramdata1':%s,'paramdata2':%s}\" http://%s%s -b cookie 2>/dev/null" % (CSRFToken, API_id, 1, 12, IP, GET_SINGLENODE_API),
+                "LAN8_IPv4DefGateway": "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'nodeid':%s,'parameter':11,'paramdata1':%s,'paramdata2':%s}\" http://%s%s -b cookie 2>/dev/null" % (CSRFToken, API_id, 8, 12, IP, GET_SINGLENODE_API),
+                "LAN1_VlanID": "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'nodeid':%s,'parameter':11,'paramdata1':%s,'paramdata2':%s}\" http://%s%s -b cookie 2>/dev/null" % (CSRFToken, API_id, 1, 20, IP, GET_SINGLENODE_API),
+                "LAN8_VlanID": "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'nodeid':%s,'parameter':11,'paramdata1':%s,'paramdata2':%s}\" http://%s%s -b cookie 2>/dev/null" % (CSRFToken, API_id, 8, 20, IP, GET_SINGLENODE_API),
+                "LAN1_IPv6Enable": "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'nodeid':%s,'parameter':11,'paramdata1':%s,'paramdata2':%s}\" http://%s%s -b cookie 2>/dev/null" % (CSRFToken, API_id, 1, 195, IP, GET_SINGLENODE_API),
+                "LAN8_IPv6Enable": "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'nodeid':%s,'parameter':11,'paramdata1':%s,'paramdata2':%s}\" http://%s%s -b cookie 2>/dev/null" % (CSRFToken, API_id, 8, 195, IP, GET_SINGLENODE_API),
+                "LAN1_IPv6Src": "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'nodeid':%s,'parameter':11,'paramdata1':%s,'paramdata2':%s}\" http://%s%s -b cookie 2>/dev/null" % (CSRFToken, API_id, 1, 196, IP, GET_SINGLENODE_API),
+                "LAN8_IPv6Src": "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'nodeid':%s,'parameter':11,'paramdata1':%s,'paramdata2':%s}\" http://%s%s -b cookie 2>/dev/null" % (CSRFToken, API_id, 8, 196, IP, GET_SINGLENODE_API),
+                "LAN1_IPv6Addr": "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'nodeid':%s,'parameter':11,'paramdata1':%s,'paramdata2':%s}\" http://%s%s -b cookie 2>/dev/null" % (CSRFToken, API_id, 1, 197, IP, GET_SINGLENODE_API),
+                "LAN8_IPv6Addr": "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'nodeid':%s,'parameter':11,'paramdata1':%s,'paramdata2':%s}\" http://%s%s -b cookie 2>/dev/null" % (CSRFToken, API_id, 8, 197, IP, GET_SINGLENODE_API),
+                "LAN1_IPv6Gateway": "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'nodeid':%s,'parameter':11,'paramdata1':%s,'paramdata2':%s}\" http://%s%s -b cookie 2>/dev/null" % (CSRFToken, API_id, 1, 199, IP, GET_SINGLENODE_API),
+                "LAN8_IPv6Gateway": "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'nodeid':%s,'parameter':11,'paramdata1':%s,'paramdata2':%s}\" http://%s%s -b cookie 2>/dev/null" % (CSRFToken, API_id, 8, 199, IP, GET_SINGLENODE_API),
+                "LAN1_NCSIPortNum": "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'nodeid':%s,'parameter':11,'paramdata1':%s,'paramdata2':%s}\" http://%s%s -b cookie 2>/dev/null" % (CSRFToken, API_id, 1, 204, IP, GET_SINGLENODE_API),
+                "LAN8_NCSIPortNum": "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'nodeid':%s,'parameter':11,'paramdata1':%s,'paramdata2':%s}\" http://%s%s -b cookie 2>/dev/null" % (CSRFToken, API_id, 8, 204, IP, GET_SINGLENODE_API),
+            }
+            if baseline:
+                for name,cmd in check_list.iteritems():
+                    status, output = CMM.retry_run_cmd(cmd)
+                    if status == 0:
+                        try:
+                            temp = eval(output)
+                        except Exception as e:
+                            message = "[Node{0}] {1}".format(API_id, e)
+                            CMM.show_message(message, timestamp=False, color="red")
+                            CMM.save_data(main_log, message, timestamp=False)
+                            collect_baseline = False
+                        else:
+                            if temp.get("error"):
+                                collect_baseline = False
+                            else:
+                                temp_dict[name] = temp
+                    else:
+                        collect_baseline = False
+                    time.sleep(1)
+                API_BASELINE["Node_{0}".format(API_id)] = temp_dict
+            else:
+                for name, cmd in check_list.iteritems():
+                    status, output = CMM.retry_run_cmd(cmd)
+                    if status == 0:
+                        try:
+                            temp = eval(output)
+                        except Exception as e:
+                            message = "[Node{0}] {1}".format(API_id, e)
+                            CMM.show_message(message, timestamp=False, color="red")
+                            CMM.save_data(main_log, message, timestamp=False)
+                        else:
+                            if not temp.get("error"):
+                                temp_dict[name] = temp
+                    time.sleep(1)
+                API_TEMP["Node_{0}".format(API_id)] = temp_dict
+            time.sleep(3)
     else:
         return False
     status, output = CMM.curl_login_logout(IP, flag="logout", username=USERNAME, password=PASSWORD, csrf_token=CSRFToken)
@@ -304,6 +377,7 @@ class CMMTest(unittest.TestCase,CMM):
         self.case_init(case_name, log_dir)
         CMM.save_data(main_log,self.banner(case_name),timestamp=False)
 
+    """
     def b_clear_sel(self):
         cmd = "{0} sel clear".format(IPMITOOL)
         message = "Clean SEL"
@@ -315,6 +389,7 @@ class CMMTest(unittest.TestCase,CMM):
         else:
             show_step_result(message,flag="FAIL")
             CMM.save_step_result(main_log,message,flag="FAIL")
+    """
 
     def c_cold_reset(self):
         global CASE_PASS
@@ -325,7 +400,7 @@ class CMMTest(unittest.TestCase,CMM):
         CMM_status = CollectAPIInfo(baseline=True)
         CMM.save_data(main_log,"[API info]\n{0}".format(str(API_BASELINE)),timestamp=False)
         CMM.save_data(main_log,"[OEM info]\n{0}".format(str(OEM_BASELINE)),timestamp=False)
-        if not FW_status or not SDR_status or not FW_status:
+        if not FW_status or not SDR_status or not CMM_status:
             CASE_PASS = False
             message = "Collect baseline FAIL !"
             CMM.save_data(main_log, message,timestamp=False)
@@ -373,15 +448,17 @@ class CMMTest(unittest.TestCase,CMM):
                     key = item.keys()[0]
                     value = item.get(key)
                     info = "{0}: {1}".format(key,value)
-                    baseline_text = "\n".join([baseline_text,info])
+                    baseline_text = " ".join([baseline_text,info])
                 loop_text = "[loop data]"
                 for item in temp_values:
                     key = item.keys()[0]
                     value = item.get(key)
                     info = "{0}: {1}".format(key,value)
-                    loop_text = "\n".join([loop_text,info])
+                    loop_text = " ".join([loop_text,info])
                 CMM.show_message(baseline_text,timestamp=False)
+                MAIN_LOG_list.append(baseline_text)
                 CMM.show_message(loop_text,timestamp=False)
+                MAIN_LOG_list.append(loop_text)
                 CMM.save_data(main_log,baseline_text,timestamp=False)
                 CMM.save_data(main_log,loop_text,timestamp=False)
                 API_fail = True
@@ -408,15 +485,17 @@ class CMMTest(unittest.TestCase,CMM):
                     key = item.keys()[0]
                     value = item.get(key)
                     info = "{0}: {1}".format(key, value)
-                    baseline_text = "\n".join([baseline_text, info])
+                    baseline_text = " ".join([baseline_text, info])
                 loop_text = "[loop data]"
                 for item in temp_values:
                     key = item.keys()[0]
                     value = item.get(key)
                     info = "{0}: {1}".format(key, value)
-                    loop_text = "\n".join([loop_text, info])
+                    loop_text = " ".join([loop_text, info])
                 CMM.show_message(baseline_text, timestamp=False)
+                MAIN_LOG_list.append(baseline_text)
                 CMM.show_message(loop_text, timestamp=False)
+                MAIN_LOG_list.append(loop_text)
                 CMM.save_data(main_log, baseline_text, timestamp=False)
                 CMM.save_data(main_log, loop_text, timestamp=False)
                 OEM_fail = True
@@ -430,8 +509,6 @@ class CMMTest(unittest.TestCase,CMM):
             average_time = sum(RESET_TIME)/len(RESET_TIME)
             message = "[Stress] CMM Cold Reset"
             show_step_result(message,flag="PASS")
-            message = "[Stress] CMM Cold Reset"
-            show_step_result(message,flag="PASS")
             CMM.save_step_result(main_log,message,flag="PASS")
             temp_text = "Stress Time: {0}s".format(STRESS_TIME)
             CMM.show_message(temp_text,timestamp=False,color="blue")
@@ -439,9 +516,10 @@ class CMMTest(unittest.TestCase,CMM):
             temp_text = "Average Reset Time: {0}s".format(average_time)
             CMM.show_message(temp_text,timestamp=False,color="blue")
             CMM.save_data(main_log, temp_text, timestamp=False)
-            MAIN_LOG_list.append("Stress Time: {0}s".format(STRESS_TIME))
-            MAIN_LOG_list.append("Average Reset Time: {0}s".format(average_time))
+            MAIN_LOG_list.append("- Stress Time: {0}s".format(STRESS_TIME))
+            MAIN_LOG_list.append("- Average Reset Time: {0}s".format(average_time))
 
+    """
     def h_collect_sel(self):
         cmd = "{0} sel elist &> {1}".format(IPMITOOL,SEL_log)
         message = "Collect SEL"
@@ -453,6 +531,7 @@ class CMMTest(unittest.TestCase,CMM):
         else:
             show_step_result(message,flag="FAIL")
             CMM.save_step_result(main_log,message,flag="FAIL")
+    """
 
     def z_finish(self):
         CMM.save_data(MAIN_LOG,"{0} {1}".format("PASS:" if CASE_PASS else "FAIL:",module_name.replace("_"," ")))

@@ -5,6 +5,8 @@ import datetime
 
 # 控制是否执行测试
 RUN = True
+# 是否生成xml报告
+XML_REPORT = True
 # 定义目录及文件
 MAIN_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 LOG_DIR = os.path.join(MAIN_DIR, "logs")
@@ -15,7 +17,8 @@ IMAGE_DIR = os.path.join(MAIN_DIR, "images")
 TMP_DIR = os.path.join(MAIN_DIR, "tmp")
 MAIN_LOG = os.path.join(LOG_DIR, "main.log")
 PDF_RESULT = os.path.join(LOG_DIR, "CMM_Report_{0}.pdf".format(datetime.datetime.now().strftime("%Y-%m-%d")))
-CASE_CONFIG = os.path.join(CONF_DIR, "cases.txt")
+CASE_CONFIG = os.path.join(CONF_DIR, "cases.cfg")
+ARGS_CONFIG = os.path.join(CONF_DIR, "config.py")
 # 定义console显示的一些参数
 TITLE_LENGTH = 64
 LINE_SPACING = 1
@@ -24,9 +27,8 @@ LINE_SPACING = 1
 SEND_MAIL = False
 EMAIL_SUBJECT = "CMM Test Report"
 EMAIL_ADDRS = [
-    "samtech_sugon@163.com",
-    "samliuming@aliyun.com",
     "liuming1@sugon.com",
+    "samliuming@aliyun.com"
 ]
 # HTML格式邮件
 EMAIL_CONTENT = """
