@@ -1,0 +1,45 @@
+# -*- coding:utf-8 -*-
+
+from Log_init import env_init
+env_init()      # To import django settings
+import re
+from Log import models
+from sam_common import unicode_convert, run_cmd
+from Log_args import *      # Get common arguments
+
+# 根据数据库记录 恢复监控日志 仅仅是北京机台
+
+def restore_monitor():
+    # Get filename list
+    flag_list = list()
+    for log in models.Log.objects.all():
+        flag = unicode_convert(log.filename).split(".log")[0]
+        flag_list.append(flag)
+    # Get monitor list
+    check_cmd = "screen -ls"
+    ret = run_cmd(check_cmd)
+    monitor_list = list()
+    for i in ret[-1].split("\n"):
+        if not i: continue
+        m = re.search(r'\d+\.\d+\.\d+\.\d+_\d+.*Detached', i)
+        if m:
+            monitor_list.append(m.group().split()[0])
+    # print monitor_list
+    # print flag_list
+    for flag in flag_list:
+        if not flag.startswith("10.0"):
+            continue
+        if flag not in monitor_list:
+            ip, port = flag.split("_")
+            serial_add_script = os.path.join(script_path, "run.sh")
+            monitor_cmd = "bash %s serial %s %s %s" %(serial_add_script, ip, port, log_path)
+            ret = run_cmd(monitor_cmd)
+            if ret[0] == 0:
+                print "[%s %s] Log collection start..." %(ip, port)
+            else:
+                print "[%s %s] Log collection FAILED !" %(ip, port)
+
+
+
+if __name__ == '__main__':
+    restore_monitor()

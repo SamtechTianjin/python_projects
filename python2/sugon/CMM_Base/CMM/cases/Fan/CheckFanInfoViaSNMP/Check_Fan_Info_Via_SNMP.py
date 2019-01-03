@@ -319,7 +319,8 @@ class CMMTest(unittest.TestCase,CMM):
             temp_text = "[{0}] SNMP V{1} info".format(fan,show_version)
             compare_flag = False
             if len(temp_snmp) == len(temp_ipmi) == ITEM_NUM:
-                if temp_snmp[:3] == temp_ipmi[:3]:
+                # if temp_snmp[:3] == temp_ipmi[:3]:
+                if temp_snmp[:2] == temp_ipmi[:2]:
                     temp_fanspeed1 = float(temp_snmp[3])-float(temp_ipmi[3])
                     temp_fanspeed2 = float(temp_snmp[4])-float(temp_ipmi[4])
                     """ 两者差值小于IPMI值 即为PASS """
@@ -387,7 +388,8 @@ class CMMTest(unittest.TestCase,CMM):
             temp_text = "[{0}] SNMP V{1} info".format(fan,show_version)
             compare_flag = False
             if len(temp_snmp) == len(temp_ipmi) == ITEM_NUM:
-                if temp_snmp[:3] == temp_ipmi[:3]:
+                # if temp_snmp[:3] == temp_ipmi[:3]:
+                if temp_snmp[:2] == temp_ipmi[:2]:
                     temp_fanspeed1 = float(temp_snmp[3])-float(temp_ipmi[3])
                     temp_fanspeed2 = float(temp_snmp[4])-float(temp_ipmi[4])
                     """ 两者差值小于IPMI值 即为PASS """
@@ -476,7 +478,8 @@ class CMMTest(unittest.TestCase,CMM):
             temp_text = "[{0}] SNMP V{1} info".format(fan,show_version)
             compare_flag = False
             if len(temp_snmp) == len(temp_ipmi) == ITEM_NUM:
-                if temp_snmp[:3] == temp_ipmi[:3]:
+                # if temp_snmp[:3] == temp_ipmi[:3]:
+                if temp_snmp[:2] == temp_ipmi[:2]:
                     temp_fanspeed1 = float(temp_snmp[3])-float(temp_ipmi[3])
                     temp_fanspeed2 = float(temp_snmp[4])-float(temp_ipmi[4])
                     """ 两者差值小于IPMI值 即为PASS """

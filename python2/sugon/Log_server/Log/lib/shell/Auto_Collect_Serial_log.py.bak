@@ -13,7 +13,7 @@ import commands
 """
 Monitor_Time = 30
 Interval = 3
-Monitor_IP = "10.0.21.63"
+Log_Server_IP = "10.0.21.63"
 Monitor_Port = "9999"
 Temp_File = "/tmp/Serial_Log.txt"
 Log_Path = sys.argv[1]
@@ -23,8 +23,8 @@ Script_Path = os.path.join(Current_Path,"run.sh")
 
 
 def Get_NIC_Port_Name():
-    name = None
-    cmd = "ifconfig -a | grep -B 1 %s | head -n 1 | awk -F: '{print $1}'" %(Monitor_IP)
+    name = ""
+    cmd = "ifconfig -a | grep -B 1 %s | head -n 1 | awk -F: '{print $1}'" %(Log_Server_IP)
     child = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output,error = child.communicate()
     if output.strip():
@@ -80,7 +80,6 @@ def Get_Filename_Via_Screen():
     # 返回使用screen监控的信息
     filenames = []
     cmd = "screen -ls"
-    # Beijing
     child = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output,error = child.communicate()
     for line in output.splitlines():
@@ -91,10 +90,6 @@ def Get_Filename_Via_Screen():
         if m:
             filename = m.group()
             filenames.append(filename)
-    # Tianjin
-
-    # Kunshan
-
     return filenames
 
 def Update_Monitor():
@@ -122,22 +117,17 @@ def Update_Monitor():
 
 
 if __name__ == '__main__':
-    """
-    确定是否为北京机台 自动收集操作只执行在北京机台
-    """
-    if Get_NIC_Port_Name():
-        while True:
-            cmd = Get_Monitor_Command()
-            if cmd:
-                child = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                child_pid = child.pid
-                time.sleep(Monitor_Time)
-                os.kill(child_pid,signal.SIGKILL)
-                Kill_Process(name="tcpdump")
-                time.sleep(1)
-                Update_Monitor()
-                time.sleep(Interval)
-            else:
-                time.sleep(3600)
-    else:
-        message = "The current server don't support auto collect !!!"
+    while True:
+        cmd = Get_Monitor_Command()
+        if cmd:
+            child = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            child_pid = child.pid
+            time.sleep(Monitor_Time)
+            os.kill(child_pid,signal.SIGKILL)
+            Kill_Process(name="tcpdump")
+            time.sleep(1)
+            Update_Monitor()
+            time.sleep(Interval)
+        else:
+            time.sleep(3600)
+

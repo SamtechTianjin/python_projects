@@ -497,7 +497,8 @@ class CMMTest(unittest.TestCase,CMM):
             compare_flag = False
             try:
                 if len(temp_snmp) == len(temp_ipmi) == ITEM_NUM:
-                    if temp_snmp[0] == temp_ipmi[0] and temp_snmp[2] == temp_ipmi[2] and temp_snmp[-4:] == temp_ipmi[-4:]:
+                    # if temp_snmp[0] == temp_ipmi[0] and temp_snmp[2] == temp_ipmi[2] and temp_snmp[-4:] == temp_ipmi[-4:]:
+                    if temp_snmp[0] == temp_ipmi[0] and temp_snmp[2] == temp_ipmi[2] and temp_snmp[-3:] == temp_ipmi[-3:]:
                         """ 两者差值小于IPMI值 即为PASS """
                         temp_pout = float(temp_snmp[2]) - float(temp_ipmi[2])
                         temp_pin = float(temp_snmp[3]) - float(temp_ipmi[3])
@@ -581,7 +582,8 @@ class CMMTest(unittest.TestCase,CMM):
             compare_flag = False
             try:
                 if len(temp_snmp) == len(temp_ipmi) == ITEM_NUM:
-                    if temp_snmp[0] == temp_ipmi[0] and temp_snmp[2] == temp_ipmi[2] and temp_snmp[-4:] == temp_ipmi[-4:]:
+                    # if temp_snmp[0] == temp_ipmi[0] and temp_snmp[2] == temp_ipmi[2] and temp_snmp[-4:] == temp_ipmi[-4:]:
+                    if temp_snmp[0] == temp_ipmi[0] and temp_snmp[2] == temp_ipmi[2] and temp_snmp[-3:] == temp_ipmi[-3:]:
                         """ 两者差值小于IPMI值 即为PASS """
                         temp_pout = float(temp_snmp[2]) - float(temp_ipmi[2])
                         temp_pin = float(temp_snmp[3]) - float(temp_ipmi[3])
@@ -686,7 +688,8 @@ class CMMTest(unittest.TestCase,CMM):
             compare_flag = False
             try:
                 if len(temp_snmp) == len(temp_ipmi) == ITEM_NUM:
-                    if temp_snmp[0] == temp_ipmi[0] and temp_snmp[2] == temp_ipmi[2] and temp_snmp[-4:] == temp_ipmi[-4:]:
+                    # if temp_snmp[0] == temp_ipmi[0] and temp_snmp[2] == temp_ipmi[2] and temp_snmp[-4:] == temp_ipmi[-4:]:
+                    if temp_snmp[0] == temp_ipmi[0] and temp_snmp[2] == temp_ipmi[2] and temp_snmp[-3:] == temp_ipmi[-3:]:
                         """ 两者差值小于IPMI值 即为PASS """
                         temp_pout = float(temp_snmp[2]) - float(temp_ipmi[2])
                         temp_pin = float(temp_snmp[3]) - float(temp_ipmi[3])

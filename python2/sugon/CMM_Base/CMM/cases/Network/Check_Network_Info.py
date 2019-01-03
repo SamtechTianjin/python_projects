@@ -58,9 +58,8 @@ def getNetworkInfoViaAPI():
             CMM.show_message(message,timestamp=False,color="red")
             CMM.save_data(main_log,message,timestamp=False)
         else:
-            if isinstance(json_data,dict):
-                if json_data.get("error"):
-                    is_fail = True
+            if isinstance(json_data,dict) and json_data.get("error"):
+                is_fail = True
             else:
                 network_info = json_data
                 CMM.save_data(MAIN_LOG,"NETWORK_INFO: {0}".format(network_info),timestamp=False)
@@ -143,12 +142,16 @@ class CMMTest(unittest.TestCase,CMM):
         temp_text = message.strip(" -")
         is_FAIL = False
         tempData = getNetworkInfoViaAPI()
-        for tempDict in tempData:
-            if tempDict.get("channel_number") == LAN:
-                API_data = tempDict
-                break
-        else:
-            API_data = {}
+        """ 判断API得到的返回值是 dict 或 list """
+        API_data = {}
+        if isinstance(tempData,list):
+            for tempDict in tempData:
+                if tempDict.get("channel_number") == LAN:
+                    API_data = tempDict
+                    break
+        elif isinstance(tempData,dict):
+            if tempData.get("channel_number") == LAN:
+                API_data = tempData
         if not API_data:
             is_FAIL = True
         else:

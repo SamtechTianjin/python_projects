@@ -15,6 +15,7 @@ from libs.common import CMM, unicode_convert
 from libs.console_show import format_item, show_step_result
 from libs.vendorList import vendorList as Vendor_DICT
 from libs.pcieDeviceClassList import pcieDeviceClassList as PCIE_Device_Class_DICT
+from libs.dimmInfoDict import DIMM_INFO_DICT as DIMM_INFO_DICT
 import conf.config as config
 
 module_name = os.path.splitext(os.path.basename(__file__))[0]
@@ -29,6 +30,8 @@ USERNAME = config.USERNAME
 PASSWORD = config.PASSWORD
 NODE_NUM = config.NODE_NUM
 CPU_NUM = config.CPU_NUM
+CHANNEL_NUM = config.CHANNEL_NUM
+DIMM_NUM_PER_CHANNEL = config.DIMM_NUM_PER_CHANNEL
 
 # Global variable
 LOGIN_FAIL = False
@@ -37,7 +40,6 @@ IPMITOOL = "ipmitool -I lanplus -H {0} -U {1} -P {2}".format(IP, USERNAME, PASSW
 SINGLE_NODE_OEM = "raw 0x3a 0x7c"
 Present_Node = []
 NODE_INFO_DICT = {}
-
 
 
 def check_node_Present(node_id):
@@ -107,6 +109,33 @@ def getNodeAssetPcieViaAPI(node_id):
                 data = json_data
     return data
 
+def getNodeAssetMemViaAPI(node_id):
+    API_id = node_id + 1
+    data = []
+    restapi = "/api/noderepo/mems"
+    cmd = "curl -X POST -H \"X-CSRFTOKEN:%s\" -H \"Content-Type:application/json\" -d \"{'nodeid':%s}\" http://%s%s -b cookie 2>/dev/null" %(CSRFToken,API_id,IP,restapi)
+    status,output = CMM.retry_run_cmd(cmd)
+    message = "[Node{0}] Get mem asset info\n{1}\nreturncode: {2}\n{3}".format(API_id,cmd,status,output)
+    CMM.save_data(main_log,message,timestamp=False)
+    if status == 0:
+        try:
+            json_data = json.loads(output)
+        except Exception as e:
+            temp_text = "[Exception] {0}".format(e)
+            MAIN_LOG_list.append(temp_text)
+            CMM.save_data(main_log,temp_text,timestamp=False)
+            CMM.show_message(temp_text,timestamp=False,color="red")
+            data = False
+        else:
+            if isinstance(json_data,dict) and json_data.get("error"):
+                temp_text = "[Node{0}] {1}".format(API_id,json_data)
+                MAIN_LOG_list.append(temp_text)
+                CMM.show_message(temp_text,timestamp=False,color="red")
+                data = False
+            else:
+                data = json_data
+    return data
+
 def getNodeAssetCpusViaOEM(node_id):
     API_id = node_id + 1
     OEM_id = node_id
@@ -136,6 +165,24 @@ def getNodeAssetPcieViaOEM(node_id,index):
         temp_list = []
     return temp_list
 
+def getNodeAssetMemViaOEM(node_id):
+    API_id = node_id + 1
+    OEM_id = node_id
+    data = []
+    for cpu_index in range(CPU_NUM):
+        for channel_index in range(CHANNEL_NUM):
+            for dimm_index in range(DIMM_NUM_PER_CHANNEL):
+                cmd = "{0} {1} {2} 0x0e 0x03 {3} {4} {5}".format(IPMITOOL,SINGLE_NODE_OEM,hex(OEM_id),hex(cpu_index),hex(channel_index),hex(dimm_index))
+                status, output = CMM.retry_run_cmd(cmd)
+                message = "OEM Node{0} cpu{1} channel{2} dimm{3}\n{4}\nreturncode: {5}\n{6}".format(API_id,cpu_index,channel_index,dimm_index,cmd,status,output)
+                CMM.save_data(main_log, message, timestamp=False)
+                if status == 0:
+                    temp_list = output.split()
+                else:
+                    temp_list = []
+                data.append(temp_list)
+    return data
+
 """ 处理OEM command获得CPU资产信息 """
 def parseCPUNodeId(temp_list):
     try:
@@ -153,7 +200,7 @@ def parseCPUBIOSSetFlags(temp_list):
         elif temp == "01":
             flag = True
         else:
-            flag = "Unknown"
+            flag = ""
     except:
         flag = "Unknown"
     return flag
@@ -195,7 +242,7 @@ def parseCPUSocketRiserType(temp_list):
             elif temp == "05":
                 t = "4+8+4"
             else:
-                t = "Unknown"
+                t = ""
             data.append(t)
     except:
         data = ["Unknown"]*3
@@ -271,7 +318,7 @@ def parsePCIEBIOSSetFlags(temp_list):
         elif temp == "01":
             flag = True
         else:
-            flag = "Unknown"
+            flag = ""
     except:
         flag = "Unknown"
     return flag
@@ -392,6 +439,167 @@ def parsePCIEVendor(temp_list):
         data = "Unknown"
     return data
 
+""" 处理OEM command获得DIMM资产信息 """
+def parseMEMNodeId(temp_list):
+    try:
+        temp = temp_list[0]
+        API_id = int(temp,16)+1
+    except:
+        API_id = "Unknown"
+    return API_id
+
+def parseMEMBIOSSetFlags(temp_list):
+    try:
+        temp = temp_list[1]
+        if temp == "00":
+            flag = False
+        elif temp == "01":
+            flag = True
+        else:
+            flag = ""
+    except:
+        flag = "Unknown"
+    return flag
+
+def parseMEMPresent(temp_list):
+    try:
+        temp = temp_list[2]
+        flag = int(temp,16)
+    except:
+        flag = "Unknown"
+    return flag
+
+def parseMEMLocation(temp_list):
+    data = ""
+    try:
+        for temp in temp_list[3:27]:
+            if temp == "00":
+                break
+            string = chr(int(temp,16))
+            data += string
+    except:
+        data = "Unknown"
+    return data
+
+def parseMEMSerialNumber(temp_list):
+    try:
+        string = ""
+        for temp in temp_list[82:90]:
+            if temp == "00":
+                break
+            string += temp
+        data = string.upper()
+    except:
+        data = "Unknown"
+    return data
+
+def parseMEMDimmType(temp_list):
+    try:
+        temp = temp_list[27]
+        if temp == "00":
+            flag = ""
+        elif temp == "01":
+            flag = "DDR"
+        elif temp == "02":
+            flag = "DDR2"
+        elif temp == "03":
+            flag = "DDR3"
+        elif temp == "04":
+            flag = "DDR4"
+        elif temp == "05":
+            flag = "DDR-T"
+        else:
+            flag = ""
+    except:
+        flag = "Unknown"
+    return flag
+
+def parseMEMWorkFreq(temp_list):
+    try:
+        dimmType = parseMEMDimmType(temp_list)
+        temp = temp_list[30]
+        index = int(temp,16)
+        if dimmType == "DDR3" or dimmType == "DDR4":
+            flag = DIMM_INFO_DICT[str(index)][dimmType]
+        else:
+            flag = ""
+    except:
+        flag = "Unknown"
+    return flag
+
+def parseMEMPartNumber(temp_list):
+    data = ""
+    try:
+        for temp in temp_list[50:82]:
+            if temp == "00":
+                break
+            string = chr(int(temp,16))
+            data += string
+    except:
+        data = "Unknown"
+    return data
+
+def parseMEMType(temp_list):
+    try:
+        temp = temp_list[28]
+        if temp == "01":
+            flag = "VOLATILE"
+        elif temp == "02":
+            flag = "AEP"
+        elif temp == "03":
+            flag = "NVDIMM"
+        else:
+            flag = ""
+    except:
+        flag = "Unknown"
+    return flag
+
+def parseMEMManufacture(temp_list):
+    data = ""
+    try:
+        for temp in temp_list[34:50]:
+            if temp == "00":
+                break
+            string = chr(int(temp,16))
+            data += string
+    except:
+        data = "Unknown"
+    return data
+
+def parseMEMFrequency(temp_list):
+    try:
+        dimmType = parseMEMDimmType(temp_list)
+        temp = temp_list[29]
+        index = int(temp,16)
+        if dimmType == "DDR3" or dimmType == "DDR4":
+            flag = DIMM_INFO_DICT[str(index)][dimmType]
+        else:
+            flag = ""
+    except:
+        flag = "Unknown"
+    return flag
+
+def parseMEMSize(temp_list):
+    try:
+        unit_temp = temp_list[31]
+        size_temp1 = temp_list[32]
+        size_temp2 = temp_list[33]
+        if unit_temp == "01":
+            unit = "MB"
+        elif unit_temp == "02":
+            unit = "GB"
+        elif unit_temp == "03":
+            unit = "TB"
+        else:
+            unit = ""
+        size = int(size_temp2,16)*256 + int(size_temp1,16)
+        data = "{0} {1}".format(size,unit)
+        if data.strip() == "0":
+            data = ""
+    except:
+        data = "Unknown"
+    return data
+
 
 
 
@@ -479,7 +687,7 @@ class CMMTest(unittest.TestCase,CMM):
                 is_fail = True
             elif int(node_id+1) in Present_Node and not data:
                 is_fail = True
-                text = "[Node{0}] API data is null !".format(node_id+1)
+                text = "[Node{0}] API CPU data is null !".format(node_id+1)
                 MAIN_LOG_list.append(text)
                 CMM.show_message(text,timestamp=False,color="red")
                 CMM.save_data(main_log,text,timestamp=False)
@@ -658,6 +866,183 @@ class CMMTest(unittest.TestCase,CMM):
                         CMM.show_message(text, timestamp=False, color="red")
                         MAIN_LOG_list.append(text)
             text = "[Node{0}] Check pcie asset info".format(node_id+1)
+            if is_fail:
+                is_FAIL = True
+                CMM.save_step_result(main_log,text,"FAIL")
+                show_step_result(text,"FAIL")
+            else:
+                CMM.save_step_result(main_log,text,"PASS")
+                show_step_result(text,"PASS")
+        if is_FAIL:
+            CASE_PASS = False
+            show_step_result(message,"FAIL")
+            CMM.save_step_result(main_log,message,"FAIL")
+        else:
+            show_step_result(message,"PASS")
+            CMM.save_step_result(main_log,message,"PASS")
+
+    def g_check_mem_asset(self):
+        global CASE_PASS
+        global NODE_INFO_DICT
+        if LOGIN_FAIL:
+            return False
+        is_FAIL = False
+        temp_text = "- Check mem asset info -"
+        CMM.show_message(format_item(temp_text),color="green",timestamp=False)
+        CMM.save_data(main_log,temp_text,timestamp=False)
+        MAIN_LOG_list.append(temp_text)
+        message = temp_text.strip(" -")
+        compare_list = ["SerialNumber","memPresent","DimmType","nodeid","WorkFreq","Location",
+                        "PartNumber","Type","Manufacture","Frequency","Size"]
+        for node_id in range(NODE_NUM):
+            is_fail = False
+            if int(node_id+1) not in Present_Node:
+                continue
+            data = getNodeAssetMemViaAPI(node_id)
+            if data == False:
+                is_fail = True
+            elif int(node_id+1) in Present_Node and not data:
+                is_fail = True
+                text = "[Node{0}] API Mem data is null !".format(node_id+1)
+                MAIN_LOG_list.append(text)
+                CMM.show_message(text,timestamp=False,color="red")
+                CMM.save_data(main_log,text,timestamp=False)
+            API_temp = [] if data == False else data
+            NODE_INFO_DICT["Node{0}".format(node_id + 1)]["MEM"] = API_temp
+            OEM_data = getNodeAssetMemViaOEM(node_id)
+            if len(API_temp) == len(OEM_data):
+                for index,temp_list in enumerate(OEM_data):
+                    memid = index+1
+                    for temp_dict in API_temp:
+                        if temp_dict.get("memid") == memid:
+                            API_SerialNumber,API_memPresent,API_DimmType,API_nodeid,API_WorkFreq,\
+                            API_Location,API_PartNumber,API_Type,API_Manufacture,API_Frequency,API_Size = \
+                                [temp_dict.get(k,None) for k in compare_list]
+                            print("="*50)
+                            OEM_SerialNumber = parseMEMSerialNumber(temp_list)
+                            print("SN:",OEM_SerialNumber)
+                            OEM_memPresent = parseMEMPresent(temp_list)
+                            print("Present:",OEM_memPresent)
+                            OEM_DimmType = parseMEMDimmType(temp_list)
+                            print("DimmType:",OEM_DimmType)
+                            OEM_nodeid = parseMEMNodeId(temp_list)
+                            print("nodeid:",OEM_nodeid)
+                            OEM_WorkFreq = parseMEMWorkFreq(temp_list)
+                            print("WorkFreq:",OEM_WorkFreq)
+                            OEM_Location = parseMEMLocation(temp_list)
+                            print("Location:",OEM_Location)
+                            OEM_PartNumber = parseMEMPartNumber(temp_list)
+                            print("PN:",OEM_PartNumber)
+                            OEM_Type = parseMEMType(temp_list)
+                            print("TYPE:",OEM_Type)
+                            OEM_Manufacture = parseMEMManufacture(temp_list)
+                            print("Manufacture:",OEM_Manufacture)
+                            OEM_Frequency = parseMEMFrequency(temp_list)
+                            print("Frequence:",OEM_Frequency)
+                            OEM_Size = parseMEMSize(temp_list)
+                            print("Size:",OEM_Size)
+                            if API_SerialNumber != OEM_SerialNumber:
+                                is_fail = True
+                                text = "[Node{0}] API MEM{1} SerialNumber: {2}".format(int(node_id+1),memid,API_SerialNumber)
+                                CMM.show_message(text,timestamp=False,color="red")
+                                MAIN_LOG_list.append(text)
+                                text = "[Node{0}] OEM MEM{1} SerialNumber: {2}".format(int(node_id+1),memid,OEM_SerialNumber)
+                                CMM.show_message(text,timestamp=False,color="red")
+                                MAIN_LOG_list.append(text)
+                            elif API_memPresent != OEM_memPresent:
+                                is_fail = True
+                                text = "[Node{0}] API MEM{1} memPresent: {2}".format(int(node_id+1),memid,API_memPresent)
+                                CMM.show_message(text,timestamp=False,color="red")
+                                MAIN_LOG_list.append(text)
+                                text = "[Node{0}] OEM MEM{1} memPresent: {2}".format(int(node_id+1),memid,OEM_memPresent)
+                                CMM.show_message(text,timestamp=False,color="red")
+                                MAIN_LOG_list.append(text)
+                            elif API_DimmType != OEM_DimmType:
+                                is_fail = True
+                                text = "[Node{0}] API MEM{1} DimmType: {2}".format(int(node_id+1),memid,API_DimmType)
+                                CMM.show_message(text,timestamp=False,color="red")
+                                MAIN_LOG_list.append(text)
+                                text = "[Node{0}] OEM MEM{1} DimmType: {2}".format(int(node_id+1),memid,OEM_DimmType)
+                                CMM.show_message(text,timestamp=False,color="red")
+                                MAIN_LOG_list.append(text)
+                            elif API_nodeid != OEM_nodeid:
+                                is_fail = True
+                                text = "[Node{0}] API MEM{1} nodeid: {2}".format(int(node_id+1),memid,API_nodeid)
+                                CMM.show_message(text,timestamp=False,color="red")
+                                MAIN_LOG_list.append(text)
+                                text = "[Node{0}] OEM MEM{1} nodeid: {2}".format(int(node_id+1),memid,OEM_nodeid)
+                                CMM.show_message(text,timestamp=False,color="red")
+                                MAIN_LOG_list.append(text)
+                            elif API_WorkFreq != OEM_WorkFreq:
+                                is_fail = True
+                                text = "[Node{0}] API MEM{1} WorkFreq: {2}".format(int(node_id+1),memid,API_WorkFreq)
+                                CMM.show_message(text,timestamp=False,color="red")
+                                MAIN_LOG_list.append(text)
+                                text = "[Node{0}] OEM MEM{1} WorkFreq: {2}".format(int(node_id+1),memid,OEM_WorkFreq)
+                                CMM.show_message(text,timestamp=False,color="red")
+                                MAIN_LOG_list.append(text)
+                            elif API_Location != OEM_Location:
+                                is_fail = True
+                                text = "[Node{0}] API MEM{1} Location: {2}".format(int(node_id+1),memid,API_Location)
+                                CMM.show_message(text,timestamp=False,color="red")
+                                MAIN_LOG_list.append(text)
+                                text = "[Node{0}] OEM MEM{1} Location: {2}".format(int(node_id+1),memid,OEM_Location)
+                                CMM.show_message(text,timestamp=False,color="red")
+                                MAIN_LOG_list.append(text)
+                            elif API_PartNumber != OEM_PartNumber:
+                                is_fail = True
+                                text = "[Node{0}] API MEM{1} PartNumber: {2}".format(int(node_id + 1), memid,API_PartNumber)
+                                CMM.show_message(text, timestamp=False, color="red")
+                                MAIN_LOG_list.append(text)
+                                text = "[Node{0}] OEM MEM{1} PartNumber: {2}".format(int(node_id + 1), memid,OEM_PartNumber)
+                                CMM.show_message(text, timestamp=False, color="red")
+                                MAIN_LOG_list.append(text)
+                            elif API_Type != OEM_Type:
+                                is_fail = True
+                                text = "[Node{0}] API MEM{1} Type: {2}".format(int(node_id + 1), memid,API_Type)
+                                CMM.show_message(text, timestamp=False, color="red")
+                                MAIN_LOG_list.append(text)
+                                text = "[Node{0}] OEM MEM{1} Type: {2}".format(int(node_id + 1), memid,OEM_Type)
+                                CMM.show_message(text, timestamp=False, color="red")
+                                MAIN_LOG_list.append(text)
+                            elif API_Manufacture != OEM_Manufacture:
+                                is_fail = True
+                                text = "[Node{0}] API MEM{1} Manufacture: {2}".format(int(node_id + 1), memid,API_Manufacture)
+                                CMM.show_message(text, timestamp=False, color="red")
+                                MAIN_LOG_list.append(text)
+                                text = "[Node{0}] OEM MEM{1} Manufacture: {2}".format(int(node_id + 1), memid,OEM_Manufacture)
+                                CMM.show_message(text, timestamp=False, color="red")
+                                MAIN_LOG_list.append(text)
+                            elif API_Frequency != OEM_Frequency:
+                                is_fail = True
+                                text = "[Node{0}] API MEM{1} Frequency: {2}".format(int(node_id + 1), memid,API_Frequency)
+                                CMM.show_message(text, timestamp=False, color="red")
+                                MAIN_LOG_list.append(text)
+                                text = "[Node{0}] OEM MEM{1} Frequency: {2}".format(int(node_id + 1), memid,OEM_Frequency)
+                                CMM.show_message(text, timestamp=False, color="red")
+                                MAIN_LOG_list.append(text)
+                            elif API_Size != OEM_Size:
+                                is_fail = True
+                                text = "[Node{0}] API MEM{1} Size: {2}".format(int(node_id + 1), memid,API_Size)
+                                CMM.show_message(text, timestamp=False, color="red")
+                                MAIN_LOG_list.append(text)
+                                text = "[Node{0}] OEM MEM{1} Size: {2}".format(int(node_id + 1), memid,OEM_Size)
+                                CMM.show_message(text, timestamp=False, color="red")
+                                MAIN_LOG_list.append(text)
+                            break
+                    else:
+                        is_fail = True
+                        text = "[Node{0} MEM{1} API] Not found data !".format(int(node_id + 1), memid)
+                        CMM.show_message(text, timestamp=False, color="red")
+                        CMM.save_data(main_log, text, timestamp=False)
+                        MAIN_LOG_list.append(text)
+            else:
+                is_fail =True
+                text = "[Node{0}] Not match MEM number !".format(node_id+1)
+                CMM.show_message(text, timestamp=False, color="red")
+                CMM.save_data(main_log, text, timestamp=False)
+                MAIN_LOG_list.append(text)
+            text = "[Node{0}] Check mem asset info".format(node_id+1)
             if is_fail:
                 is_FAIL = True
                 CMM.save_step_result(main_log,text,"FAIL")

@@ -1,0 +1,78 @@
+# -*- coding:utf-8 -*-
+from __future__ import unicode_literals
+
+from django.shortcuts import render_to_response, HttpResponse, HttpResponseRedirect
+import models
+import os
+import json
+import re
+import copy
+from django.core.exceptions import ValidationError
+from lib.sam_common import Remote, unicode_convert, run_cmd, save_data
+from lib.Log_args import *      # Get common arguments
+
+# Create your views here.
+
+def update_log(request):
+    serial_add_script = os.path.join(script_path, "run.sh")
+    serial_del_script = os.path.join(script_path, "end.sh")
+    ret_dict = dict()
+    if request.method == "POST":
+        ret_dict["status"] = "FAIL"
+        data = unicode_convert(request.POST.dict())
+        save_data(debug_log_path, json.dumps(data))     # debug
+        opt = re.search(r'ADD|DELETE', data.keys()[0], re.IGNORECASE).group()
+        key_ip = unicode_convert("%s[IP]"%opt)
+        key_port = unicode_convert("%s[Port]"%opt)
+        ip = data[key_ip]
+        port = data[key_port]
+        ret_dict["flag"] = opt
+        # print "[%s] ip: %s    port: %s" %(opt, ip, port)
+        filename = "%s_%s.log" %(ip, port)      # The filename should be unique
+        log = models.Log(ip=ip, port=port, filename=filename)
+        try:
+            log.full_clean()
+        except ValidationError as e:
+            # ret_dict["error"] = unicode_convert(e.message_dict)
+            ret_dict["error"] = "Input error !"
+        else:
+            filter_res = models.Log.objects.filter(filename=filename)
+            if opt == "ADD":
+                if filter_res:
+                    ret_dict["error"] = "[%s %s] Already monitored !" %(ip, port)
+                serial_cmd = "bash %s serial %s %s %s" % (serial_add_script, ip, port, log_path)
+            elif opt == "DELETE":
+                if not filter_res:
+                    ret_dict["error"] = "[%s %s] Not being collected !" %(ip, port)
+                serial_cmd = "bash %s %s %s" % (serial_del_script, ip, port)
+            else:
+                serial_cmd = "false"    # return not 0
+            if ret_dict.has_key("error"):
+                ret_dict = unicode_convert(ret_dict)
+                save_data(debug_log_path, json.dumps(ret_dict))     # debug
+                return HttpResponse(json.dumps(ret_dict), content_type="application/json")
+            ### Log server is Platform server ###
+            if opt == "DELETE":
+                ret = run_cmd(serial_cmd)
+                if ret[0] == 0:
+                    ret_dict["status"] = "OK"
+                    filter_res.delete()     # Delete it from database
+                else:
+                    ret_dict["error"] = "[%s %s] Stop logging FAILED !" % (ip, port)
+                    save_data(debug_log_path, ret[-1])
+            elif opt == "ADD":
+                ping_ret = Remote.ping(ip)
+                if ping_ret:
+                    ret = run_cmd(serial_cmd)
+                    if ret[0] == 0:
+                        ret_dict["status"] = "OK"
+                        log.save()            # Save it to database
+                    else:
+                        ret_dict["error"] = "[%s %s] Log collection FAILED !" % (ip, port)
+                        save_data(debug_log_path, ret[-1])
+                else:
+                    ret_dict["error"] = "[%s] Connection FAIL !" % ip
+        ret_dict = unicode_convert(ret_dict)
+        save_data(debug_log_path, json.dumps(ret_dict))
+        return HttpResponse(json.dumps(ret_dict), content_type="application/json")
+    return render_to_response("Equipment/LogServer.html")

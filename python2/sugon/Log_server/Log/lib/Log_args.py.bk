@@ -1,0 +1,15 @@
+# -*- coding:utf-8 -*-
+
+import os
+
+# Define some common arguments
+APP_Log_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+debug_log_path = os.path.join(APP_Log_path, "log", "debug.log")
+log_path = "/log"
+script_path = os.path.join(APP_Log_path, "lib", "shell")
+
+# log_server_ip = "10.0.21.63"
+# username = "root"
+# password = "111111"
+# log_path = "/log"
+# script_path = "/home/sam/Log"

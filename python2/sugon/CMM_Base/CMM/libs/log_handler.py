@@ -22,8 +22,9 @@ PSU_API_DICT = {}
 PSU_OEM_DICT = {}
 TABLE_NUM = 1
 FRU_LIST = []
-NETWORK_LIST = []
+NETWORK_LIST = {}
 NODE_ASSET_DICT = {}
+SENSOR_TABLE_LIST = []
 
 """
 获取CMM最新迭代版本CMM_version
@@ -147,6 +148,7 @@ class PDFCreator(object):
         global FRU_LIST
         global NETWORK_LIST
         global NODE_ASSET_DICT
+        global SENSOR_TABLE_LIST
         total_dict = collections.OrderedDict()
         pass_dict = collections.OrderedDict()
         fail_dict = collections.OrderedDict()
@@ -203,6 +205,10 @@ class PDFCreator(object):
                     line = re.search(r'Node_Asset_INFO:.*',line).group().strip()
                     key,value = line.split(":",1)
                     NODE_ASSET_DICT = eval(value)
+                elif re.search(r'^OEM_Sensor_Table_INFO:',line):
+                    line = re.search(r'^OEM_Sensor_Table_INFO:.*',line).group().strip()
+                    key,value = line.split(":",1)
+                    SENSOR_TABLE_LIST = eval(value)
                 else: pass
                 if is_info:
                     value.append(line)
@@ -386,7 +392,6 @@ class PDFCreator(object):
                     if temp_keys:
                         temp_length = len(temp_keys)
                         temp_list = nodeInfo.get(item_key)
-                        num = len(temp_list)
                         for index,temp_dict in enumerate(temp_list):
                             if index == 0:
                                 C_start = column_start
@@ -416,6 +421,32 @@ class PDFCreator(object):
                                     self.can.setFont(psfontname=self.title_font, size=8)
                                     R_start = table_location
                 self.can.showPage()
+        elif page == "SENSOR_TABLE":
+            if not SENSOR_TABLE_LIST:
+                return False
+            listLength = len(SENSOR_TABLE_LIST)
+            location = self.content_start
+            self.can.setFont(psfontname=self.title_font,size=14)
+            self.can.setFillColor(aColor=colors.darkblue)
+            self.can.drawString(x=self.line_start,y=location,text="[CMM Sensor Table Information]")
+            table_location = location - 0.5*inch
+            row_height = 0.2 * inch
+            column_start = self.line_start - 0.5*inch
+            R_start = table_location
+            for index,tempStr in enumerate(SENSOR_TABLE_LIST):
+                self.can.setFont(psfontname=self.title_font,size=7)
+                self.can.setFillColor(aColor=colors.black)
+                self.can.drawString(x=column_start,y=R_start,text=str(tempStr))
+                R_start -= row_height
+                if R_start <= self.content_end:
+                    # 判断是否还有内容
+                    if index == listLength - 1:
+                        pass
+                    else:
+                        self.can.showPage()
+                        self.head(page="content")
+                        R_start = location
+            self.can.showPage()
         elif page == "NETWORK":
             if not NETWORK_LIST:
                 return False
@@ -432,44 +463,44 @@ class PDFCreator(object):
             content_a_start = column_start + 0.1 * inch
             content_b_start = column_start + column_width_a + 0.1 * inch
             self.can.setFont(psfontname=self.title_font, size=8)
-            for network_dict in NETWORK_LIST:
-                key_list, value_list = [], []
-                for key, value in network_dict.iteritems():
-                    key_list.append(key)
-                    value_list.append(value)
-                key_num = len(key_list)
-                # 绘制表格
-                R_start = table_location
-                for R_index in range(key_num+1):
-                    if R_index == 0:
-                        C_start = column_start
-                        self.can.setFillColor(aColor=colors.lightgrey)
-                        self.can.rect(x=C_start, y=R_start, width=line_width, height=row_height, fill=1)
-                    else:
-                        C_start = column_start
-                        self.can.rect(x=C_start, y=R_start, width=column_width_a, height=row_height, fill=0)
-                        C_start += column_width_a
-                        self.can.rect(x=C_start, y=R_start, width=column_width_b, height=row_height, fill=0)
-                    R_start -= row_height
-                # 填入数据
-                R_start = table_location
-                for R_index in range(key_num+1):
-                    if R_index == 0:
-                        self.can.setFillColor(aColor=colors.black)
-                        text_start = content_a_start
-                        self.can.drawString(x=text_start, y=R_start + 0.1 * inch, text="Web API: /api/cmminfo/network/")
-                    else:
-                        temp_index = R_index - 1
-                        self.can.setFillColor(aColor=colors.darkblue)
-                        text_start = content_a_start
-                        temp_text = key_list[temp_index]
-                        self.can.drawString(x=text_start,y=R_start+0.1*inch,text=str(temp_text))
-                        self.can.setFillColor(aColor=colors.black)
-                        text_start = content_b_start
-                        temp_text = value_list[temp_index]
-                        self.can.drawString(x=text_start,y=R_start+0.1*inch,text=str(temp_text))
-                    R_start -= row_height
-                self.can.showPage()
+            # for network_dict in NETWORK_LIST: # 数据由list变为dict
+            key_list, value_list = [], []
+            for key, value in NETWORK_LIST.iteritems():
+                key_list.append(key)
+                value_list.append(value)
+            key_num = len(key_list)
+            # 绘制表格
+            R_start = table_location
+            for R_index in range(key_num+1):
+                if R_index == 0:
+                    C_start = column_start
+                    self.can.setFillColor(aColor=colors.lightgrey)
+                    self.can.rect(x=C_start, y=R_start, width=line_width, height=row_height, fill=1)
+                else:
+                    C_start = column_start
+                    self.can.rect(x=C_start, y=R_start, width=column_width_a, height=row_height, fill=0)
+                    C_start += column_width_a
+                    self.can.rect(x=C_start, y=R_start, width=column_width_b, height=row_height, fill=0)
+                R_start -= row_height
+            # 填入数据
+            R_start = table_location
+            for R_index in range(key_num+1):
+                if R_index == 0:
+                    self.can.setFillColor(aColor=colors.black)
+                    text_start = content_a_start
+                    self.can.drawString(x=text_start, y=R_start + 0.1 * inch, text="Web API: /api/cmminfo/network/")
+                else:
+                    temp_index = R_index - 1
+                    self.can.setFillColor(aColor=colors.darkblue)
+                    text_start = content_a_start
+                    temp_text = key_list[temp_index]
+                    self.can.drawString(x=text_start,y=R_start+0.1*inch,text=str(temp_text))
+                    self.can.setFillColor(aColor=colors.black)
+                    text_start = content_b_start
+                    temp_text = value_list[temp_index]
+                    self.can.drawString(x=text_start,y=R_start+0.1*inch,text=str(temp_text))
+                R_start -= row_height
+            self.can.showPage()
         elif page == "PSU_API" or page == "PSU_OEM":
             if not PSU_API_DICT:
                 return False
@@ -684,6 +715,10 @@ class PDFCreator(object):
         if FRU_LIST:
             pdf.head(page="content")
             pdf.data(log_data, page="FRU")
+        # Sensor Table 信息
+        if SENSOR_TABLE_LIST:
+            pdf.head(page="content")
+            pdf.data(log_data, page="SENSOR_TABLE")
         # Node 资产信息
         if NODE_ASSET_DICT:
             pdf.data(log_data, page="NODE_ASSET")

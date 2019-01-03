@@ -649,7 +649,8 @@ class CMM(AutoTest):
 
     @classmethod
     def compare_dict(cls,baseline,loopdata):
-        temp_list = []
+        baselineList = []
+        loopdataList = []
         for k in baseline:
             v1 = baseline.get(k)
             v2 = loopdata.get(k)
@@ -658,9 +659,11 @@ class CMM(AutoTest):
                     vv1 = v1.get(kk)
                     vv2 = v2.get(kk)
                     if vv1 != vv2:
-                        temp1 = "{0} {1}".format(k,kk)
-                        temp_list.append(temp1)
-        return temp_list
+                        temp1 = "[{0}] {1}: {2}".format(k,kk,vv1)
+                        temp2 = "[{0}] {1}: {2}".format(k,kk,vv2)
+                        baselineList.append(temp1)
+                        loopdataList.append(temp2)
+        return baselineList,loopdataList
 
 
 

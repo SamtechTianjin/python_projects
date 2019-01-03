@@ -249,13 +249,45 @@ def parse_isPSUOn(temp_list):
         isPSUOn = "Unknown"
     return isPSUOn
 
+def init_psu_powerstate_via_API(psu_id):
+    # 执行命令后等待时间
+    waitTime = 5
+    is_fail = False
+    restapi = "/api/cmmstate/psus"
+    poweron_cmd = "curl -X POST -H \"X-CSRFTOKEN:%s\" -H \"Content-Type:application/json\" -d \"{'id':%s,'controlcommand':1}\" http://%s%s -b cookie 2>/dev/null" %(CSRFToken,psu_id,IP,restapi)
+    initial_power = GetPSUInfoViaAPI(CSRFToken, psu_id).get("isPSUOn")
+    # 初始化电源状态为ON
+    if initial_power != "ON":
+        status,output = CMM.retry_run_cmd(poweron_cmd)
+        message = "Init psu{0} power state\n{1}\nreturncode: {2}\n{3}".format(psu_id,poweron_cmd,status,output)
+        CMM.save_data(main_log, message, timestamp=False)
+        try:
+            json_data = json.loads(output)
+        except Exception as e:
+            is_fail = True
+            message = "[Exception] {0}".format(e)
+            CMM.show_message(message,timestamp=False,color="red")
+            CMM.save_data(main_log,message,timestamp=False)
+        else:
+            if json_data.get("error"):
+                is_fail = True
+                MAIN_LOG_list.append(output)
+                CMM.show_message(output,timestamp=False,color="red")
+        time.sleep(waitTime)
+    # 确认电源状态为ON 否则退出测试
+    initial_power = GetPSUInfoViaAPI(CSRFToken, psu_id).get("isPSUOn")
+    if initial_power != "ON":
+        is_fail = True
+    return False if is_fail else True
+
 def set_psu_powerstate_via_API(psu_id):
     # 执行命令后等待时间
-    waitTime = 60
+    waitTime = 5
     is_fail = False
     restapi = "/api/cmmstate/psus"
     poweroff_cmd = "curl -X POST -H \"X-CSRFTOKEN:%s\" -H \"Content-Type:application/json\" -d \"{'id':%s,'controlcommand':0}\" http://%s%s -b cookie 2>/dev/null" %(CSRFToken,psu_id,IP,restapi)
     poweron_cmd = "curl -X POST -H \"X-CSRFTOKEN:%s\" -H \"Content-Type:application/json\" -d \"{'id':%s,'controlcommand':1}\" http://%s%s -b cookie 2>/dev/null" %(CSRFToken,psu_id,IP,restapi)
+    """
     initial_power = GetPSUInfoViaAPI(CSRFToken, psu_id).get("isPSUOn")
     # 初始化电源状态为ON
     if initial_power == "OFF":
@@ -275,6 +307,7 @@ def set_psu_powerstate_via_API(psu_id):
                 MAIN_LOG_list.append(output)
                 CMM.show_message(output,timestamp=False,color="red")
         time.sleep(waitTime)
+    """
     # 确认电源状态为ON 否则退出测试
     initial_power = GetPSUInfoViaAPI(CSRFToken, psu_id).get("isPSUOn")
     if initial_power == "ON":
@@ -493,12 +526,13 @@ class CMMTest(unittest.TestCase,CMM):
                 if OEM_FanDuty != API_FanDuty:
                     """ 考虑PSU不在位情况 """
                     if OEM_Present_1 == 1 or API_Present_1 == 1:
-                        is_fail = True
+                        """ PSU风扇占空比会自动调节 暂时不对比占空比 """
+                        # is_fail = True
                         fail_text = "[OEM] {0} FanDuty: {1}\n[API] {0} FanDuty: {2}".format(psu,OEM_FanDuty,API_FanDuty)
                         CMM.save_data(main_log, fail_text, timestamp=False)
                         CMM.show_message(fail_text, timestamp=False)
-                        FanDuty_list.append("[OEM] {0} FanDuty: {1}".format(psu,OEM_FanDuty))
-                        FanDuty_list.append("[API] {0} FanDuty: {1}".format(psu,API_FanDuty))
+                        # FanDuty_list.append("[OEM] {0} FanDuty: {1}".format(psu,OEM_FanDuty))
+                        # FanDuty_list.append("[API] {0} FanDuty: {1}".format(psu,API_FanDuty))
                 # Check PSU isPSUOn
                 message = "- Check PSU isPSUOn -"
                 if message not in isPSUOn_list:
@@ -628,7 +662,8 @@ class CMMTest(unittest.TestCase,CMM):
                             get_pout = item.get("Pout")
                             if get_id in Present_psu:
                                 temp_pout = abs(int(get_pout)-int(expect_pout))
-                                if temp_pout > int(expect_pout)/3:
+                                """ 两种方式的差值小于等于单一Node检测值的二分之一 即为PASS """
+                                if temp_pout > int(expect_pout)/2:
                                     is_FAIL = True
                                     text = "[/cmminfo/psus] PSU{0} {1}".format(psu_id,expect_pout)
                                     MAIN_LOG_list.append(text)
@@ -657,7 +692,6 @@ class CMMTest(unittest.TestCase,CMM):
             show_step_result(message, flag="PASS")
             CMM.save_step_result(main_log, message, flag="PASS")
 
-
     # TODO: Set PSU via OEM command
 
     def m_set_psu_power_state_via_API(self):
@@ -668,20 +702,40 @@ class CMMTest(unittest.TestCase,CMM):
         CMM.show_message(format_item(temp_text), color="green", timestamp=False)
         CMM.save_data(main_log, temp_text, timestamp=False)
         MAIN_LOG_list.append(temp_text)
-        for psu_id in range(1, int(PSU_NUM) + 1):
-            if psu_id not in Present_psu:
-                continue
-            status = set_psu_powerstate_via_API(psu_id)
-            message = "[PSU{0}] {1}".format(psu_id,temp_text.strip(" -"))
-            if status:
-                show_step_result(message,flag="PASS")
-                CMM.save_step_result(main_log,message,flag="PASS")
-            else:
-                CASE_PASS = False
-                show_step_result(message,flag="FAIL")
-                CMM.save_step_result(main_log,message,flag="FAIL")
-            time.sleep(1)
+        """
+        1. 保证PSU在位数量大于1
+        2. 保证所有的PSU均处于Power on状态
+        """
+        if len(Present_psu) > 1:
+            for psu_id in range(1, int(PSU_NUM) + 1):
+                if psu_id not in Present_psu:
+                    continue
+                text = "[PSU{0}] Init state to power on".format(psu_id)
+                initStatus = init_psu_powerstate_via_API(psu_id)
+                if initStatus:
+                    show_step_result(text,flag="PASS")
+                    CMM.save_step_result(main_log,text,flag="PASS")
+                else:
+                    show_step_result(text,flag="FAIL")
+                    CMM.save_step_result(main_log,text,flag="FAIL")
+                    CASE_PASS = False
+                    return False
+            for psu_id in range(1, int(PSU_NUM) + 1):
+                if psu_id not in Present_psu:
+                    continue
+                status = set_psu_powerstate_via_API(psu_id)
+                message = "[PSU{0}] {1}".format(psu_id,temp_text.strip(" -"))
+                if status:
+                    show_step_result(message,flag="PASS")
+                    CMM.save_step_result(main_log,message,flag="PASS")
+                else:
+                    CASE_PASS = False
+                    show_step_result(message,flag="FAIL")
+                    CMM.save_step_result(main_log,message,flag="FAIL")
+                time.sleep(1)
 
+    """
+    自动的优先级大于手动 暂时不测试
     def n_set_psu_fanduty_via_API(self):
         if LOGIN_FAIL:
             return False
@@ -703,6 +757,7 @@ class CMMTest(unittest.TestCase,CMM):
                 show_step_result(message,flag="FAIL")
                 CMM.save_step_result(main_log,message,flag="FAIL")
             time.sleep(1)
+    """
 
     def y_curl_logout(self):
         if LOGIN_FAIL:

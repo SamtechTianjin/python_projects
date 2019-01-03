@@ -767,10 +767,12 @@ def controll_node_uid_via_API(node_id,flag="ON"):
     return False
 
 def set_node_uid_via_API(node_id):
+    # 执行命令后的等待时间 命令执行间隔时间
+    waitTime = 3
     API_id = node_id + 1
     # 初始化Node状态为Light Off
     status = controll_node_uid_via_API(node_id,flag="OFF")
-    time.sleep(3)
+    time.sleep(waitTime)
     temp_text = "[Node{0}] Init UID LED Light Off".format(API_id)
     if status:
         UID_status = check_node_UID(node_id).get("API_UID")
@@ -787,9 +789,10 @@ def set_node_uid_via_API(node_id):
         show_step_result(temp_text, "FAIL")
         CMM.save_step_result(main_log, temp_text, flag="FAIL")
         return False
+    time.sleep(waitTime)
     # Node Light On
     status = controll_node_uid_via_API(node_id,flag="ON")
-    time.sleep(3)
+    time.sleep(waitTime)
     temp_text = "[Node{0}] Set UID LED Light On".format(API_id)
     if status:
         UID_status = check_node_UID(node_id).get("API_UID")
@@ -806,9 +809,10 @@ def set_node_uid_via_API(node_id):
         show_step_result(temp_text, "FAIL")
         CMM.save_step_result(main_log, temp_text, flag="FAIL")
         return False
+    time.sleep(waitTime)
     # Node Light Off
     status = controll_node_uid_via_API(node_id,flag="OFF")
-    time.sleep(3)
+    time.sleep(waitTime)
     temp_text = "[Node{0}] Set UID LED Light Off".format(API_id)
     if status:
         UID_status = check_node_UID(node_id).get("API_UID")
@@ -1324,7 +1328,6 @@ class CMMTest(unittest.TestCase,CMM):
                 CMM.save_step_result(main_log,message,flag="FAIL")
             time.sleep(1)
 
-    #"""
     def d_check_node_PwrState(self):
         if LOGIN_FAIL:
             return False
@@ -1514,7 +1517,8 @@ class CMMTest(unittest.TestCase,CMM):
                 CMM.save_step_result(main_log,message,flag="FAIL")
             time.sleep(1)
 
-    def p_set_node_power_via_API(self):
+    # 放在Node测试的最后一步
+    def w_set_node_power_via_API(self):
         if LOGIN_FAIL:
             return False
         global CASE_PASS
@@ -1597,7 +1601,6 @@ class CMMTest(unittest.TestCase,CMM):
             CASE_PASS = False
             show_step_result(message, flag="FAIL")
             CMM.save_step_result(main_log, message, flag="FAIL")
-    #"""
 
     def t_set_all_node_power_via_API(self):
         if LOGIN_FAIL:

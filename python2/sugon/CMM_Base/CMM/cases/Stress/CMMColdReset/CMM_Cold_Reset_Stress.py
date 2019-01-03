@@ -162,7 +162,8 @@ def CollectAPIInfo(baseline=False,login_time=300):
         """ API检测PSU信息 """
         for psu_id in range(1,PSU_NUM+1):
             temp_dict = {}
-            check_list = ["Vendor","isPSUOn","SN","psuPresent","Model","FanDuty","id","Present"]
+            # check_list = ["Vendor","isPSUOn","SN","psuPresent","Model","FanDuty","id","Present"]
+            check_list = ["Vendor","isPSUOn","SN","psuPresent","Model","id","Present"]
             cmd = "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'id':%s}\" http://%s%s -b cookie 2>/dev/null" % (CSRFToken, psu_id, IP, GET_PSU_API)
             if baseline:
                 status, output = CMM.retry_run_cmd(cmd)
@@ -201,7 +202,8 @@ def CollectAPIInfo(baseline=False,login_time=300):
         """ API检测FAN信息 """
         for fan_id in range(1,FAN_NUM+1):
             temp_dict = {}
-            check_list = ["id","FanPresent","Present","FanStatus","Duty"]
+            # check_list = ["id","FanPresent","Present","FanStatus","Duty"]
+            check_list = ["id","FanPresent","Present","FanStatus"]
             cmd = "curl -X POST -H \"Content-Type:application/json\" -H \"X-CSRFTOKEN:%s\" -d \"{'id':%s}\" http://%s%s -b cookie 2>/dev/null" %(CSRFToken,fan_id,IP,GET_FAN_API)
             if baseline:
                 status, output = CMM.retry_run_cmd(cmd)
@@ -433,8 +435,13 @@ class CMMTest(unittest.TestCase,CMM):
                 CMM.show_message(message,timestamp=False,color="red")
                 MAIN_LOG_list.append(message)
                 CMM.save_data(main_log,message,timestamp=False)
-                temp_list = CMM.compare_dict(API_BASELINE,API_TEMP)
-                MAIN_LOG_list.extend(temp_list)
+                # temp_list = CMM.compare_dict(API_BASELINE,API_TEMP)
+                # MAIN_LOG_list.extend(temp_list)
+                baselineList,loopdataList = CMM.compare_dict(API_BASELINE,API_TEMP)
+                MAIN_LOG_list.append("[Baseline]")
+                MAIN_LOG_list.extend(baselineList)
+                MAIN_LOG_list.append("[LoopData]")
+                MAIN_LOG_list.extend(loopdataList)
                 temp_baselines = []
                 temp_values = []
                 for key in API_BASELINE:
@@ -443,22 +450,22 @@ class CMMTest(unittest.TestCase,CMM):
                     if temp_baseline != temp_value:
                         temp_baselines.append({key:temp_baseline})
                         temp_values.append({key:temp_value})
-                baseline_text = "[baseline data]"
+                baseline_text = "[Baseline]"
                 for item in temp_baselines:
                     key = item.keys()[0]
                     value = item.get(key)
                     info = "{0}: {1}".format(key,value)
                     baseline_text = " ".join([baseline_text,info])
-                loop_text = "[loop data]"
+                loop_text = "[LoopData]"
                 for item in temp_values:
                     key = item.keys()[0]
                     value = item.get(key)
                     info = "{0}: {1}".format(key,value)
                     loop_text = " ".join([loop_text,info])
                 CMM.show_message(baseline_text,timestamp=False)
-                MAIN_LOG_list.append(baseline_text)
+                # MAIN_LOG_list.append(baseline_text)
                 CMM.show_message(loop_text,timestamp=False)
-                MAIN_LOG_list.append(loop_text)
+                # MAIN_LOG_list.append(loop_text)
                 CMM.save_data(main_log,baseline_text,timestamp=False)
                 CMM.save_data(main_log,loop_text,timestamp=False)
                 API_fail = True
@@ -480,13 +487,13 @@ class CMMTest(unittest.TestCase,CMM):
                     if temp_baseline != temp_value:
                         temp_baselines.append({key: temp_baseline})
                         temp_values.append({key: temp_value})
-                baseline_text = "[baseline data]"
+                baseline_text = "[Baseline]"
                 for item in temp_baselines:
                     key = item.keys()[0]
                     value = item.get(key)
                     info = "{0}: {1}".format(key, value)
                     baseline_text = " ".join([baseline_text, info])
-                loop_text = "[loop data]"
+                loop_text = "[LoopData]"
                 for item in temp_values:
                     key = item.keys()[0]
                     value = item.get(key)
